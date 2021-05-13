@@ -4,7 +4,8 @@ import random as rng
 import matplotlib.pyplot as plt
 import math 
 from scipy.optimize import fsolve
-PATH = 'D:\\python Image Processing\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
+PATH = 'D:\\Python Image Processing\\cutting-inserts-detection\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
+#PATH = 'D:\\python Image Processing\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
 #R = 4mm R = 170px 
 PX2MM = 170/4
 
@@ -127,10 +128,11 @@ def findArcPoint(image,line1,line2):
         yc = z[1]
         k = (yc-ys)/vy
         F = np.empty((2))
-        F[0] =  math.sqrt((xs-xc)**2 +(ys-yc)**2) - PX2MM*4 
+        F[0] =  (xs-xc)**2 +(ys-yc)**2 - (PX2MM*4)**2 
         F[1] =  xc - vx*k - xs
         return F
-    xc,yc = fsolve(f, (0.1,0.1) ) 
+    xc,yc = fsolve(f, (0.1,0.1) )
+    print(xc,yc) 
 
     ### Visualization ###
     cv.circle(img,(int(R[2]),int(R[3])),10,(255,255,255),2) #Lines intersection
@@ -159,21 +161,20 @@ def findArcPoint(image,line1,line2):
     pts_y = []
     for i in range(len(pts)): pts_y.append(pts[i][1])
 
-    s = srednia(pts_y) 
-    m = mediana(pts_y)  
-    o = odchylenie(pts_y, s)  
-    print("Srednia: {:.2f}   mediana: {:.2f}   odchylenie standardowe: {:.2f}".format(s,m,o))
+    #s = srednia(pts_y) 
+    #m = mediana(pts_y)  
+    #o = odchylenie(pts_y, s)  
+    #print("Srednia: {:.2f}   mediana: {:.2f}   odchylenie standardowe: {:.2f}".format(s,m,o))
    
     ### Visualization ###
     cv.namedWindow('orginal ROI', cv.WINDOW_NORMAL)
     cv.imshow('orginal ROI', roi)
     cv.resizeWindow('orginal ROI', (rxk-rx0)*3,(ryk-ry0)*3)
-    print(roi.shape)
+
     cv.namedWindow('binary ROI', cv.WINDOW_NORMAL)
     cv.imshow('binary ROI', roi2)
     cv.resizeWindow('binary ROI', (rxk-rx0)*3,(ryk-ry0)*3) 
     
-
 def polarTransform(roi,start_point,r,theta,theta_inc):
     drawing = np.zeros((roi.shape[0], roi.shape[1], 3), dtype=np.uint8)
     roi2 = np.zeros((int(r[1]-r[0]),int(theta/theta_inc)+1, 1), dtype=np.uint8)
@@ -238,6 +239,9 @@ for img_index in range(1,11):
     line1 = searchingBox(img,(300,650,400,500),(0,-1))
     line2 = searchingBox(img,(730,800,240,350),(-1,0))
     findArcPoint(img2,line1,line2)
+    cv.namedWindow(str(img_index), cv.WINDOW_NORMAL)
+    cv.imshow(str(img_index), img)
+    cv.resizeWindow(str(img_index), img.shape[1],img.shape[0]) 
     cv.waitKey(0)
 
 
