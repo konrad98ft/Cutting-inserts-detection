@@ -2,8 +2,13 @@ import cv2 as cv
 import numpy as np
 import random as rng
 import matplotlib.pyplot as plt
-import math 
+import math
+import sys
+from numpy.core.fromnumeric import shape 
 from scipy.optimize import fsolve
+from scipy import ndimage
+
+
 PATH = 'D:\\Python Image Processing\\cutting-inserts-detection\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
 #PATH = 'D:\\python Image Processing\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
 #R = 4mm R = 170px 
@@ -53,10 +58,10 @@ def findLinesPoints(roi,direction):
                     break
     #Show searching effect                
     roi = cv.cvtColor(roi,cv.COLOR_GRAY2BGR)
-    '''### Visualization
+    ### Visualization
     #drawing = cv.bitwise_or(drawing, roi)
-    cv.namedWindow('Drawing', cv.WINDOW_NORMAL)
-    cv.imshow('Drawing',drawing)'''
+    '''cv.namedWindow('Drawing', cv.WINDOW_NORMAL)
+    cv.imshow('Drawing',drawing)''' 
  
 
     return pts
@@ -75,28 +80,33 @@ def linesFiltration(roi,direction):
     cv.imshow('Drawing2',roi2) '''
     return roi2
 
-def searchingBox(image, points=(300,650,400,500), direction=(0,1)):
-    #points = (x1,x2,y1,y2) direction = (x_dir,y_dir)
+def searchingBox(image, points=(300,650,400,500), direction=(0,1)): 
+    ### points = (x1,x2,y1,y2) direction = (x_dir,y_dir) ###
 
-    #Apply ROI
+    # Apply ROI
     roi = image.copy()[points[2]:points[3],points[0]:points[1]]
     #Treshold
     ret,roi = cv.threshold(roi,80,255,cv.THRESH_TOZERO)
-    #Show ROI
+    # Show ROI
     '''cv.namedWindow('Searching Box', cv.WINDOW_NORMAL)
     cv.imshow('Searching Box',  roi)
     cv.resizeWindow('Searching Box', points[1]-points[0], points[3]-points[2] )'''
 
-    #Distract various searching directions
+    # Distract various searching directions
     roi =  linesFiltration(roi,direction)
     pts = findLinesPoints(roi,direction)
    
-    #Fit line
+    # Break in case of faulty input image
+    if(len(pts) < 2):
+        print("Any line found")
+        sys.exit(1) 
+
+    # Fit line
     vector = np.array(pts)
     vx,vy,x,y = cv.fitLine(vector,cv.DIST_HUBER, 0, 0.01, 0.05) 
     
-    #Show ROI and fitted line on the orgnial image  
-    x = x + points[0]   #go back to the global coordinate system
+    # Show ROI and fitted line on the orgnial image  
+    x = x + points[0]   # Go back to the global coordinate system
     y = y + points[2]
     line = vx,vy,x,y
 
@@ -121,50 +131,65 @@ def findArcPoint(image,line1,line2):
     xs,ys = R[2:]
     vx = vx1 + vx2
     vy = vy1 + vy2
-
-    # Solving non linear equation to find arc centre
-    def f(z):   
-        xc = z[0]
-        yc = z[1]
-        k = (yc-ys)/vy
-        F = np.empty((2))
-        F[0] =  (xs-xc)**2 +(ys-yc)**2 - (PX2MM*4)**2 
-        F[1] =  xc - vx*k - xs
-        return F
-    xc,yc = fsolve(f, (0.1,0.1) )
-    print(xc,yc) 
-
-    ### Visualization ###
-    cv.circle(img,(int(R[2]),int(R[3])),10,(255,255,255),2) #Lines intersection
-    cv.circle(img,(int(xc),int(yc)),1,(255,255,255),2) #Arc centre
-    cv.circle(img,(int(xc),int(yc)),int(PX2MM*4/math.sqrt(2)),(255,255,255),1) #Arc radius
     
-    # ROI boundaries
-    inc = 50
+    # Find 4 possible arc centres of the cutting insert
+    C = [] # coortinates of the 4 possible arc centres
+    v = np.array([[vx,vy],[-vx,vy],[-vx,-vy],[vx,-vy]], dtype='float')  #possible direction vectors
+    l = math.sqrt(v[0][0]**2 + v[0][1]**2)  #lenght of those vectors
+    k = (PX2MM*4)/l #how many vectors is between line crossing point and cutting insert arc centre
+    for i in range(len(v)): #all possible configurations
+        pom = xs + v[i][0]*k  , ys + v[i][1]*k
+        cv.circle(img,(int(xs + v[i][0]*k),int(ys + v[i][1]*k)),1,(255,255,255),4) ### Visualization ###
+        C.append(pom)
+ 
+    # Chose ROI with contains cutting insertarc - closest to the centre of the image
+    properArc = 99
+    min_dist = 9999
+    img_cy,img_cx=img.shape[:2]
+    for i in range(len(v)):
+        dist =    math.sqrt( (C[i][0]-img_cx/2)**2 +  (C[i][1]-img_cy/2)**2 )
+        if(  dist < min_dist):
+            min_dist = dist
+            properArc = i       
+    xc,yc=C[properArc] #proper arc centre coordinates
+
+    # Build roi between arc centre(xc,yc) and lines crossing point (xs,ys) in dependece on their location 
+    inc = 50 #offset outer boundaries by some offset to avoid cutting the arc
     rx0 = int(xc) if xc < xs else int(xs) 
     ry0 = int(yc) if yc < ys else int(ys)
     rxk = int(xc+inc) if xc > xs else int(xs+inc) 
     ryk = int(yc+inc) if yc > ys else int(ys+inc)
     roi = image.copy()[ry0:ryk,rx0:rxk]
-    
+  
+    ### Visualization ###
+    cv.circle(img,(int(R[2]),int(R[3])),10,(255,255,255),2) #Lines intersection
+    cv.circle(img,(int(xc),int(yc)),1,(255,255,255),2) #Arc centre
+    cv.circle(img,(int(xc),int(yc)),int(PX2MM*4/math.sqrt(2)),(255,255,255),1) #Arc radius
+
     ### Visualization ###
     cv.namedWindow('Arc ROI', cv.WINDOW_NORMAL)    
     cv.imshow('Arc ROI', roi)
     cv.resizeWindow('Arc ROI', (rxk-rx0)*3,(ryk-ry0)*3) 
-    print(roi.shape)
 
     # Polar transform and filtration
     roi = polarTransform(roi,start_point=(0,0),r=(int(PX2MM*0.75),int(PX2MM*3)),theta=90,theta_inc=0.25)
     ret,roi2 = cv.threshold(roi,80,255,cv.THRESH_TOZERO)
     roi2 = linesFiltration(roi2,(0,-1))
     pts = findLinesPoints(roi2,(0,-1))
+    if(len(pts) < 2):
+        print("Any line found")
+        sys.exit(1) 
     pts_y = []
     for i in range(len(pts)): pts_y.append(pts[i][1])
 
-    #s = srednia(pts_y) 
-    #m = mediana(pts_y)  
-    #o = odchylenie(pts_y, s)  
-    #print("Srednia: {:.2f}   mediana: {:.2f}   odchylenie standardowe: {:.2f}".format(s,m,o))
+    s = srednia(pts_y) 
+    m = mediana(pts_y)  
+    o = odchylenie(pts_y, s)  
+    print("Średnia: {:.2f}\nMediana: {:.2f}\nOdchylenie standardowe: {:.2f}".format(s,m,o))
+    if(s < 63.5 and s > 59):
+        cv.putText(img,'OK',(15,15), cv.FONT_HERSHEY_PLAIN, 1,255,2)
+    else:
+        cv.putText(img,'N_OK',(15,15), cv.FONT_HERSHEY_PLAIN, 1,255,2)
    
     ### Visualization ###
     cv.namedWindow('orginal ROI', cv.WINDOW_NORMAL)
@@ -206,43 +231,59 @@ def polarTransform(roi,start_point,r,theta,theta_inc):
             cv.resizeWindow('polar roi',roi2.shape[1]*3,roi2.shape[0]*3)'''
     return roi2  
 
+# Output analyze
 def srednia(pts):
     suma = sum(pts)
     return suma / float(len(pts))
-
 def mediana(pts):
     pts.sort()
     if len(pts) % 2 == 0:  
         half = int(len(pts) / 2)
         return float(sum(pts[half - 1:half + 1])) / 2.0
     else: 
-        return pts[int(len(pts) / 2)]
-
+        return pts[int(len(pts) / 2)] 
 def wariancja(pts, srednia):
     sigma = 0.0
     for ocena in pts:
         sigma += (ocena - srednia)**2
     return sigma / len(pts)
-
 def odchylenie(pts, srednia): 
     w = wariancja(pts, srednia)
     return math.sqrt(w)
 
 
-# Get image
-for img_index in range(1,11):
+# Get an image
+for img_index in range(1,12):
     img_path= PATH + str(img_index) +'.bmp'
     img = cv.imread(img_path,-1)
-    img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    img2 = img.copy()
+    try:
+        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)    
+    except:
+        print("Image not found")
+        sys.exit(1)
 
+    # Rotate image 
+    img2 = img.copy()  
     line1 = searchingBox(img,(300,650,400,500),(0,-1))
-    line2 = searchingBox(img,(730,800,240,350),(-1,0))
+    vx1, vy1, x2, y2 = line1
+    rot_ang = -math.atan2(y2 - vy1, x2 - vx1) if vy1  < 0 else math.atan2(y2 - vy1, x2 - vx1) 
+    img = ndimage.rotate(img2.copy(), rot_ang, reshape=False)
+    
+    # Find lines
+    img2 = img.copy()  
+    line1 = searchingBox(img,(300,650,400,500),(0,-1))
+    #line1 = searchingBox(img,(300,650,100,200),(0,1))
+    #line2 = searchingBox(img,(730,800,240,350),(-1,0))
+    line2 = searchingBox(img,(150,220,240,350),(1,0))
+   
+    # Check image
     findArcPoint(img2,line1,line2)
+   
     cv.namedWindow(str(img_index), cv.WINDOW_NORMAL)
     cv.imshow(str(img_index), img)
     cv.resizeWindow(str(img_index), img.shape[1],img.shape[0]) 
     cv.waitKey(0)
+    cv.destroyAllWindows()
 
 
 '''
