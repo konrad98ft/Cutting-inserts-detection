@@ -2,3 +2,4 @@ samples/
 samples_good/
 samples_faulty/
 tensor_flow_samples/
+cutting_inserts/
