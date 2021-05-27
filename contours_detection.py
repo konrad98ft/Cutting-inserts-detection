@@ -60,8 +60,8 @@ def findLinesPoints(roi,direction):
     roi = cv.cvtColor(roi,cv.COLOR_GRAY2BGR)
     ### Visualization
     #drawing = cv.bitwise_or(drawing, roi)
-    '''cv.namedWindow('Drawing', cv.WINDOW_NORMAL)
-    cv.imshow('Drawing',drawing)''' 
+    cv.namedWindow('Drawing', cv.WINDOW_NORMAL)
+    cv.imshow('Drawing',drawing)
  
 
     return pts
@@ -155,11 +155,19 @@ def findArcPoint(image,line1,line2):
 
     # Build roi between arc centre(xc,yc) and lines crossing point (xs,ys) in dependece on their location 
     inc = 50 #offset outer boundaries by some offset to avoid cutting the arc
-    rx0 = int(xc) if xc < xs else int(xs) 
-    ry0 = int(yc) if yc < ys else int(ys)
-    rxk = int(xc+inc) if xc > xs else int(xs+inc) 
-    ryk = int(yc+inc) if yc > ys else int(ys+inc)
+    rx0 = int(xc) if xc < xs else int(xs-inc) 
+    ry0 = int(yc) if yc < ys else int(ys-inc)
+    rxk = int(xc) if xc > xs else int(xs+inc) 
+    ryk = int(yc) if yc > ys else int(ys+inc)
     roi = image.copy()[ry0:ryk,rx0:rxk]
+    print(xc,xs,yc,ys)
+
+    #Rotate roi
+    ang =0
+    if(xc>xs and yc<ys): ang = 90 
+    if(xc>xs and yc>ys): ang = 180 
+    if(xc<xs and yc>ys): ang = 270  
+    roi = ndimage.rotate(roi, ang)
   
     ### Visualization ###
     cv.circle(img,(int(R[2]),int(R[3])),10,(255,255,255),2) #Lines intersection
@@ -172,7 +180,10 @@ def findArcPoint(image,line1,line2):
     cv.resizeWindow('Arc ROI', (rxk-rx0)*3,(ryk-ry0)*3) 
 
     # Polar transform and filtration
-    roi = polarTransform(roi,start_point=(0,0),r=(int(PX2MM*0.75),int(PX2MM*3)),theta=90,theta_inc=0.25)
+    try:
+        roi = polarTransform(roi,start_point=(0,0),r=(int(PX2MM*0.75),int(PX2MM*3)),theta=90,theta_inc=0.25)
+    except:
+        roi = roi
     ret,roi2 = cv.threshold(roi,80,255,cv.THRESH_TOZERO)
     roi2 = linesFiltration(roi2,(0,-1))
     pts = findLinesPoints(roi2,(0,-1))
@@ -273,8 +284,8 @@ for img_index in range(1,12):
     img2 = img.copy()  
     line1 = searchingBox(img,(300,650,400,500),(0,-1))
     #line1 = searchingBox(img,(300,650,100,200),(0,1))
-    #line2 = searchingBox(img,(730,800,240,350),(-1,0))
-    line2 = searchingBox(img,(150,220,240,350),(1,0))
+    line2 = searchingBox(img,(730,800,240,350),(-1,0))
+    #line2 = searchingBox(img,(150,220,240,350),(1,0))
    
     # Check image
     findArcPoint(img2,line1,line2)
