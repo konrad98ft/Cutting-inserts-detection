@@ -1,14 +1,9 @@
-from typing import Counter
 import cv2 as cv
 import numpy as np
 import random as rng
 import matplotlib.pyplot as plt
 import math
 import sys
-from numpy.core.fromnumeric import shape 
-# from scipy.optimize import fsolve
-# from scipy import ndimage
-
 
 
 PATH = 'D:\\Python Image Processing\\cutting-inserts-detection\\tensor_flow_samples\\'
@@ -68,24 +63,25 @@ for img_index in range(1,34):
     
     
     # Define ROI as 1/4 of the cutting insert
-    sep = 100
-    start_point = (XC, minY-sep)
-    end_point = (maxX+sep, YC)
+    Xdim = 1176
+    Ydim = 676
+    start_point = (XC, int(YC-Ydim))
+    end_point = (XC+int(Xdim), YC)
     img = cv.rectangle(img, start_point, end_point, 255, 2)
     start_point = (XC, YC)
-    end_point = (maxX+sep, maxY+sep)
+    end_point = (int(XC+Xdim), int(YC+Ydim))
     img = cv.rectangle(img, start_point, end_point, 255, 2)
-    start_point = (minX-sep, minY-sep)
+    start_point = (int(XC-Xdim), int(YC-Ydim))
     end_point = (XC, YC)
     img = cv.rectangle(img, start_point, end_point, 255, 2)
-    start_point = (minX-sep, YC)
-    end_point = (XC, maxY+sep)
+    start_point = (int(XC-Xdim), YC)
+    end_point = (XC, int(YC+Ydim))
     img = cv.rectangle(img, start_point, end_point, 255, 2)
-    
-    '''cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
+    '''
+    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
     cv.imshow(str(img_index), img)
-    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2))'''
-
+    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2))
+'''
 
     # Get 4 images from 1x(1/4) by filping by x and y axis
     roi = img.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
@@ -103,5 +99,4 @@ for img_index in range(1,34):
     
 
 
-    cv.waitKey(100)
  
