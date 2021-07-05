@@ -374,12 +374,12 @@ for img_index in range(1,25):
     # Get an image
     img_path= PATH2 +"3_"+ str(img_index) +'.png'
     img = cv.imread(img_path,-1)
+    img3 = img.copy()
     try:
         img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)    
     except:
         print("Image not found")
         sys.exit(1)
-
     start_time = time.time()
 
     # Find centre of the cutting insert
@@ -390,7 +390,7 @@ for img_index in range(1,25):
     Ydim = 650
     start_point = (XC, YC)
     end_point = (int(XC+Xdim), int(YC+Ydim))
-    deepL_img = img.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
+    deepL_img = img3.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
     deepL_img = cv.resize(deepL_img, (150,150), interpolation = cv.INTER_AREA)
     printTime("Time-centre")
 
@@ -404,25 +404,27 @@ for img_index in range(1,25):
 
     # Find breaches
     findArcPoint(img2,line1,line2)
-    printTime("Time-all")  
+    printTime("Time-breaches")  
 
-    # Show effects
-    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
-    cv.imshow(str(img_index), img)
-    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
-
-    
-    
     classification = []
     x = image.img_to_array(deepL_img)
     x = np.expand_dims(x, axis=0)
     x/=255
     image_tensor = np.vstack([x])
     classes = model.predict(image_tensor)
-    print(classes)
 
+    if classes > 0.5:
+        title =  "is good  " + str(round(float((classes)*100),2)) + "%"
+    else:
+        title =  "is faulty  " + str(round(float((1-classes)*100),2)) + "%"
+    print(title)
+    cv.putText(img,title,(100,300), cv.FONT_HERSHEY_PLAIN, 5,255,2)
+    printTime("Time-deepl")  
 
-
+    # Show effects
+    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
+    cv.imshow(str(img_index), img)
+    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
 
     cv.namedWindow("deepL_img", cv.WINDOW_FREERATIO)
     cv.imshow("deepL_img", deepL_img)
