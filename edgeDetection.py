@@ -20,68 +20,67 @@ from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage.color import label2rgb
 
+import tensorflow as tf
+from tensorflow import keras
+from keras.preprocessing import image
+
 
 PATH = 'D:\\Python Image Processing\\cutting-inserts-detection\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
 PATH2 = 'D:\\Python Image Processing\\cutting-inserts-detection\\tensor_flow_samples\\'
 #PATH = 'D:\\python Image Processing\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
-
-PX2MM = 620/4 #R = 4mm R = 170px 
+model = keras.models.load_model('D:\\Python Image Processing\\cutting-inserts-detection\\model_sztuczne_wadliwe')
+PX2MM = 620/4 #R = 4mm R = 620px 
  
 def findLinesPoints(roi,direction):   
     pts = []
-    searching_msk = 5
-    msk_val = (30,30,50,30,30)
+
+    kernel = np.ones((7,7),np.uint8)
+    roi = cv.morphologyEx(roi, cv.MORPH_OPEN, kernel)
+    roi = cv.Canny(roi,200,100)
+
     # X direction searching
     if(direction[1] == 1):              
-        x_range = (0,roi.shape[0]-searching_msk,1)
+        x_range = (0,roi.shape[0],1)
         y_range = (0,roi.shape[1]-1,1) 
     if(direction[1] == -1): 
-        x_range = (roi.shape[0]-1-searching_msk,0,-1)  
+        x_range = (roi.shape[0]-1,0,-1)  
         y_range = (0,roi.shape[1]-1,1)              
     # Y direction searching
     if(direction[0] == 1): 
-        x_range = (0,roi.shape[1]-searching_msk,1)
+        x_range = (0,roi.shape[1],1)
         y_range = (roi.shape[0]-1,0,-1) 
     if(direction[0] == -1):            
-        x_range = (roi.shape[1]-1-searching_msk,0,-1)
+        x_range = (roi.shape[1]-1,0,-1)
         y_range = (roi.shape[0]-1,0,-1)  
 
     drawing = np.zeros((roi.shape[0], roi.shape[1], 3), dtype=np.uint8)
     for y in range(y_range[0],y_range[1],y_range[2]): #y_range
         for x in range(x_range[0],x_range[1],x_range[2]): #x_range
-            box = 0
+  
             if(direction[1] != 0):
-                for i in range(searching_msk):
-                    if(roi[x+i,y] > msk_val[i]): box+=1              
-                if(box >= searching_msk-1):
-                    xl = x + int(searching_msk/2)      
-                    pts.append([y,xl])
-                    for j in range(searching_msk): drawing[x+j,y]=(200,0,0)
-                    drawing[xl,y]=(0,255,0)
+                if(roi[x,y] > 0):            
+                    pts.append([y,x])
+                    drawing[x,y]=(0,255,0)
                     break
 
             if(direction[0] != 0): 
-                for i in range(searching_msk):
-                    if(roi[y,x+i] > msk_val[i]): box+=1               
-                if(box >= searching_msk-1):
-                    xl = x + int(searching_msk/2)    
-                    pts.append([xl,y])
-                    for j in range(searching_msk): drawing[y,x+j]=(200,0,0)
-                    drawing[y,xl]=(0,0,255)                    
+                if(roi[y,x] > 0):               
+                    pts.append([x,y])
+                    drawing[y,x]=(0,0,255)                    
                     break
-    ### Visualization
-    '''cv.namedWindow('findLinesPoints', cv.WINDOW_NORMAL)
-    cv.imshow('findLinesPoints',drawing)  '''              
-    roi = cv.cvtColor(roi,cv.COLOR_GRAY2BGR)
     
-
+    ### Visualization
+    cv.namedWindow('findLinesPoints', cv.WINDOW_NORMAL)
+    cv.imshow('findLinesPoints',drawing)             
 
     return pts
  
 def linesFiltration(roi,direction):
+    # Define kernels
     kernel1 = np.array([[-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1],[2,2,2,2,2,2,2],[4,4,4,4,4,4,4],[2,2,2,2,2,2,2],[-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1]])
     kernel2 = np.array([[-1,-1,2,4,2,-1,-1],[-1,-1,2,4,2,-1,-1],[-1,-1,2,4,2,-1,-1],[-1,-1,2,4,2,-1,-1],[-1,-1,2,4,2,-1,-1]])
-   
+    
+    # Chose kernel proper for defined direction
     if(direction[1]!=0): kernel = kernel1
     if(direction[0]!=0): kernel = kernel2
     
@@ -90,23 +89,24 @@ def linesFiltration(roi,direction):
     #Show filter effect
     '''cv.namedWindow('linesFiltration', cv.WINDOW_NORMAL)
     cv.imshow('linesFiltration',roi2) '''
+   
     return roi2
 
-def searchingBox(image, points=(300,650,400,500), direction=(0,1)): 
+def searchingBox(image, points, direction=(0,1)): 
     ### points = (x1,x2,y1,y2) direction = (x_dir,y_dir) ###
 
     # Apply ROI
     roi = image.copy()[points[2]:points[3],points[0]:points[1]]
     
-    #Treshold
-    ret,roi = cv.threshold(roi,80,255,cv.THRESH_TOZERO)
+    # Treshold
+    ret,roi = cv.threshold(roi,100,255,cv.THRESH_TOZERO)
     
-    # Show ROI
+    ### Visualization - show ROI
     '''cv.namedWindow('Searching Box', cv.WINDOW_NORMAL)
     cv.imshow('Searching Box',  roi)
     cv.resizeWindow('Searching Box', points[1]-points[0], points[3]-points[2] )'''
 
-    # Distract various searching directions
+    # Find points with belongs to the edge
     roi = linesFiltration(roi,direction)
     pts = findLinesPoints(roi,direction)
    
@@ -143,59 +143,67 @@ def findArcPoint(image,line1,line2):
     B = np.array([-x1,-y1,-x2,-y2], dtype='float')
     R = np.linalg.inv(A).dot(B)
     xs,ys = R[2:]
-    vx = vx1 + vx2
-    vy = vy1 + vy2
+    rot_ang = math.atan2(vy2,vx2) 
+    vy =  abs( vx1 +  vx2 ) if vy2 < 0 else abs( vy1 +  vy2 )
+    vx = abs( vy1 +  vy2 ) if vy2 < 0 else abs( vx1 +  vx2 )
+    #print(vx1,vy1)
+    #print(vx2,vy2)
+    #print(vx,vy)
+
+    l = math.sqrt(vx**2 + vy**2) # lenght of those vectors
+    k = (PX2MM*4)/l # how many vectors is between line crossing point and cutting insert arc centre
+    p1 = (int(xs - k*vx), int(ys - k * vy))
+    p2 = (int(xs ), int(ys ))
+    cv.line(img, p1,p2 , (255,255,255), 2, cv.LINE_AA, 0)
+
     
     # Find 4 possible arc centres of the cutting insert
     C = [] # coortinates of the 4 possible arc centres
-    v = np.array([[vx,vy],[-vx,vy],[-vx,-vy],[vx,-vy]], dtype='float')  #possible direction vectors
-    l = math.sqrt(v[0][0]**2 + v[0][1]**2)  #lenght of those vectors
-    k = (PX2MM*4)/l #how many vectors is between line crossing point and cutting insert arc centre
-    for i in range(len(v)): #all possible configurations
+    v = np.array([[vx,vy],[-vx,vy],[-vx,-vy],[vx,-vy]], dtype='float')  # all possible direction of the vectors
+
+    for i in range(len(v)): # all possible configurations
         pom = xs + v[i][0]*k  , ys + v[i][1]*k
         cv.circle(img,(int(xs + v[i][0]*k),int(ys + v[i][1]*k)),1,(255,255,255),4) ### Visualization ###
         C.append(pom)
  
-    # Chose ROI with contains cutting insertarc - closest to the centre of the image
-    properArc = 99
+    # Chose ROI with contains cutting insert arc - closest to the centre of the image
     min_dist = 9999
     img_cy,img_cx=img.shape[:2]
     for i in range(len(v)):
-        dist =    math.sqrt( (C[i][0]-img_cx/2)**2 +  (C[i][1]-img_cy/2)**2 )
+        dist = math.sqrt( (C[i][0]-img_cx/2)**2 +  (C[i][1]-img_cy/2)**2 )
         if(  dist < min_dist):
             min_dist = dist
             properArc = i       
     xc,yc=C[properArc] #proper arc centre coordinates
 
     # Build roi between arc centre(xc,yc) and lines crossing point (xs,ys) in dependece on their location 
-    inc = 50 #offset outer boundaries by some offset to avoid cutting the arc
+    inc = 100 #offset outer boundaries by some offset to avoid cutting the arc
     rx0 = int(xc) if xc < xs else int(xs-inc) 
     ry0 = int(yc) if yc < ys else int(ys-inc)
     rxk = int(xc) if xc > xs else int(xs+inc) 
     ryk = int(yc) if yc > ys else int(ys+inc)
     roi = image.copy()[ry0:ryk,rx0:rxk]
-    #print(xc,xs,yc,ys)
 
-    #Rotate roi
+    # Rotate roi
     ang =0
     if(xc>xs and yc<ys): ang = 90 
     if(xc>xs and yc>ys): ang = 180 
     if(xc<xs and yc>ys): ang = 270  
     roi = ndimage.rotate(roi, ang)
-  
-    ### Visualization ###
-    cv.circle(img,(int(R[2]),int(R[3])),10,(255,255,255),3) #Lines intersection
-    cv.circle(img,(int(xc),int(yc)),1,(255,255,255),3) #Arc centre
-    cv.circle(img,(int(xc),int(yc)),int(PX2MM*4/math.sqrt(2)),(255,255,255),1) #Arc radius
 
     ### Visualization ###
-    '''cv.namedWindow('Arc ROI', cv.WINDOW_NORMAL)    
+    cv.circle(img,(int(R[2]),int(R[3])),int(PX2MM*4),(255,255,255),3) #Lines intersection
+    cv.circle(img,(int(xc),int(yc)),5,(255,255,255),3) #Arc centre
+    cv.circle(img,(int(xc),int(yc)),int(PX2MM*4/math.sqrt(2)),(255,255,255),2) #Arc radius
+
+    ### Visualization ###
+    cv.namedWindow('Arc ROI', cv.WINDOW_NORMAL)    
     cv.imshow('Arc ROI', roi)
-    cv.resizeWindow('Arc ROI', (rxk-rx0)*3,(ryk-ry0)*3) '''
+    cv.resizeWindow('Arc ROI', roi.shape[1],roi.shape[0]) 
 
     # Polar transform and filtration
     try:
-        roi = polarTransform(roi,start_point=(0,0),r=(int(PX2MM*0.75),int(PX2MM*3)),theta=90,theta_inc=0.25)
+        roi = polarTransform(roi,start_point=(0,0),r=(int(PX2MM*1),int(PX2MM*2.25)),theta=90,theta_inc=0.25)
     except:
         roi = roi
     ret,roi2 = cv.threshold(roi,80,255,cv.THRESH_TOZERO)
@@ -210,11 +218,11 @@ def findArcPoint(image,line1,line2):
     s = srednia(pts_y) 
     m = mediana(pts_y)  
     o = odchylenie(pts_y, s)  
-    '''print("Średnia: {:.2f}\nMediana: {:.2f}\nOdchylenie standardowe: {:.2f}".format(s,m,o))
-    if(s < 63.5 and s > 59):
-        cv.putText(img,'OK',(15,15), cv.FONT_HERSHEY_PLAIN, 1,255,2)
+    print("Średnia: {:.2f}\nMediana: {:.2f}\nOdchylenie standardowe: {:.2f}".format(s,m,o))
+    if(s < 137 and s > 129) and o < 1.5:
+        cv.putText(img,('OK    '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
     else:
-        cv.putText(img,'N_OK',(15,15), cv.FONT_HERSHEY_PLAIN, 1,255,2)'''
+        cv.putText(img,('N_OK   '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
    
     ### Visualization ###
     '''cv.namedWindow('orginal ROI', cv.WINDOW_NORMAL)
@@ -245,15 +253,17 @@ def polarTransform(roi,start_point,r,theta,theta_inc):
               
             roi2[R-r[0],int(alpha/theta_inc)] = roi[x,y]
 
-            '''### Visualization ###
-            drawing = cv.bitwise_or(drawing, roid)
+            ### Visualization ###
+            '''drawing = cv.bitwise_or(drawing, roid)
             cv.namedWindow('polar lines', cv.WINDOW_NORMAL)
             cv.imshow('polar lines', drawing)
-            cv.resizeWindow('polar lines',drawing.shape[0]*3,drawing.shape[1]*3)
+            cv.resizeWindow('polar lines',drawing.shape[0],drawing.shape[1])
 
             cv.namedWindow('polar roi', cv.WINDOW_NORMAL)
             cv.imshow('polar roi', roi2)
-            cv.resizeWindow('polar roi',roi2.shape[1]*3,roi2.shape[0]*3)'''
+            cv.resizeWindow('polar roi',roi2.shape[1],roi2.shape[0])'''
+            
+
     return roi2  
 
 # Output analyze
@@ -315,7 +325,7 @@ def findInsertCentreOtsu(img):
     
     return XC,YC
 
-def rotateImage(image):
+
 
  
     # apply threshold
@@ -359,15 +369,10 @@ def printTime(str='time'):
     elapsed_time = time.time() - start_time
     print("{}: \t {:.3f}s".format(str,elapsed_time))
 
-def rotate(image):
 
-    
-    return image
-
-
-for img_index in range(0,12):
+for img_index in range(1,25):
     # Get an image
-    img_path= PATH2 +"0_"+ str(img_index) +'.png'
+    img_path= PATH2 +"3_"+ str(img_index) +'.png'
     img = cv.imread(img_path,-1)
     try:
         img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)    
@@ -386,66 +391,46 @@ for img_index in range(0,12):
     start_point = (XC, YC)
     end_point = (int(XC+Xdim), int(YC+Ydim))
     deepL_img = img.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
-    deepL_img = cv.resize(deepL_img, (256,256), interpolation = cv.INTER_AREA)
+    deepL_img = cv.resize(deepL_img, (150,150), interpolation = cv.INTER_AREA)
     printTime("Time-centre")
 
-    '''#Alternative rotate
-    size = (int(img.shape[1]/4),int(img.shape[0]/4))
-    print(size)
-    small = cv.resize(img,  size)
-    small = rotateImage(small)
-    printTime("Time-alt-rotate")'''
-
-    # Rotate image
+    # Find lines to define arc centre
     X_offset = 1030
     Y_offset = 530 
-    img2 = img.copy()
-    roi = img.copy()[XC-X_offset+350:XC+X_offset-350,YC-Y_offset-150:YC-Y_offset+150]  
-    line1 = searchingBox(img,(XC-X_offset+350,XC+X_offset-350,YC-Y_offset-150,YC-Y_offset+150),(0,1))
-    printTime("Time-rotate 1")
-    vx1, vy1, x2, y2 = line1
-    rot_ang = -math.atan2(y2 - vy1, x2 - vx1) if vy1  < 0 else math.atan2(y2 - vy1, x2 - vx1) 
-    printTime("Time-rotate 1.1")
-    img = ndimage.rotate(img2.copy(), rot_ang, reshape=False)
-    printTime("Time-rotate 2")
-
-    # Find lines
     img2 = img.copy()  
     line1 = searchingBox(img,(XC-X_offset+350,XC+X_offset-350,YC+Y_offset-150,YC+Y_offset+150),(0,-1))
     line2 = searchingBox(img,(XC+X_offset-150,XC+X_offset+150,YC-Y_offset+300,YC+Y_offset-300),(-1,0))  
     printTime("Time-lines")
 
-    # Check image
+    # Find breaches
     findArcPoint(img2,line1,line2)
     printTime("Time-all")  
-
-   
 
     # Show effects
     cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
     cv.imshow(str(img_index), img)
     cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
 
+    
+    
+    classification = []
+    x = image.img_to_array(deepL_img)
+    x = np.expand_dims(x, axis=0)
+    x/=255
+    image_tensor = np.vstack([x])
+    classes = model.predict(image_tensor)
+    print(classes)
+
+
+
+
     cv.namedWindow("deepL_img", cv.WINDOW_FREERATIO)
     cv.imshow("deepL_img", deepL_img)
     cv.resizeWindow("deepL_img", int(deepL_img.shape[1]),int(deepL_img.shape[0])) 
+    
     cv.waitKey(0)
     cv.destroyAllWindows()
 
 
-'''
-searchingBox(img,(300,650,100,200),(0,1))
-cv.waitKey(0)
-searchingBox(img,(150,220,240,350),(1,0))
-cv.waitKey(0) 
-'''
-
-
-
-
-
-cv.waitKey(0)
-cv.destroyAllWindows()
- 
 
 

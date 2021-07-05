@@ -1,4 +1,5 @@
 samples/
+samples2/
 samples_good/
 samples_good2/
 samples_faulty/
@@ -16,3 +17,10 @@ t_data3.zip
 test.zip
 traning.zip
 validation.zip
+DATA_SET_1/
+DATA_SET_2/
+DATA_SET_3/
+DATA_SET_4/
+DATA_SET_5/
+DATA_SET_6/
+model_sztuczne_wadliwe/
