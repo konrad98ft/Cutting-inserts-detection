@@ -1,5 +1,5 @@
 # Cutting Inserts Inspection
-> Machine vision algorithm used for usage inspection of the cutting inserts used in lathe machine. Project utilizes hybrid approach to the image classification by using "clasical" and deep learning algorithms.
+> Machine vision algorithm utilized for usage inspection of the cutting inserts used in lathe machine. Project utilizes hybrid approach to the image classification by using "clasical" and deep learning algorithms.
 > Google Colab - deep learning [_here_](https://colab.research.google.com/drive/1kx3xTkQlXvd9BFqhah-TFIcSVgmnih5d). <!-- If you have the project hosted somewhere, include the link here. -->
 
 ## Table of Contents
