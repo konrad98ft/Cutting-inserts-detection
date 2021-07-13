@@ -6,7 +6,7 @@
 * [General Info](#general-information)
 * [Technologies Used](#technologies-used)
 * [Features](#features)
-* [Project Motivation](#project-motivation)
+* [Project Development](#project-development)
 * [Setup](#setup)
 * [Project Status](#project-status)
 * [Room for Improvement](#room-for-improvement)
@@ -37,7 +37,7 @@ List the ready features here:
 - Distracting surface contaminations from real damages
 
 
-## Project Motivation
+## Project Development
 ![s1](https://user-images.githubusercontent.com/62110076/118273840-ba78ca00-b4c4-11eb-9893-0470e6860e2d.png)
 
 ![s2](https://user-images.githubusercontent.com/62110076/118274719-c3b66680-b4c5-11eb-8d37-a3583593b515.png)
