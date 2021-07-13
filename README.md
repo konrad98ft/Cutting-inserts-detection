@@ -58,10 +58,10 @@ Project is: _in progress_
 
 
 ## Room for Improvement
-Algorithms optimazation. 
-Providing greater independence from lighting.
-Examining other deep learning pre-trained networks
-Feeding deep learning algorithm with syntetic data generated in Blender
+* Algorithms optimazation. 
+* Providing greater independence from lighting.
+* Examining other deep learning pre-trained networks
+* Feeding deep learning algorithm with syntetic data generated in Blender
 
 
 
