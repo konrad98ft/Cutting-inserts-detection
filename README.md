@@ -9,8 +9,7 @@
 * [Setup](#setup)
 * [Project Status](#project-status)
 * [Room for Improvement](#room-for-improvement)
-* [Acknowledgements](#acknowledgements)
-* [Contact](#contact)
+* [Google Colab](#google-colab)
 <!-- * [License](#license) -->
 
 
@@ -65,12 +64,7 @@ Project is: _in progress_
 * Feeding deep learning algorithm with syntetic data generated in Blender
 
 
-
-
-
- 
-
-
-## Google Colab project for training pourposes
+## Google Colab
+Used for preparing neural network model by transfer learning and utilizing Incepction V3. 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1q0ud51vhYlfaU56DseQxJFiGECGlMdUl#scrollTo=jFm_l3ABcbT3)
 
