@@ -27,7 +27,7 @@
 - OpenCv 4.3.0
 - NumPy 1.18.5
 - SciPy 1.6.2
-- JetPack 4.4 with following software enviornment [ more info here ](https://www.adlinktech.com/Products/Deep_Learning_Accelerator_Platform_and_Server/AI_Machine_Vision_Devices/NEON-2000-JT2_Series).
+- JetPack 4.4 with following software enviornment [ more info here ](https://aiot-ist.github.io/neon-2000-jt2/faq/).
 
 
 
