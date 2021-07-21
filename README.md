@@ -1,6 +1,5 @@
 # Cutting Inserts Inspection
-> Machine vision algorithm utilized for damage inspection of the cutting inserts used in lathe machine. Project utilizes hybrid approach to the image classification by using "clasical" and deep learning algorithms.
-> Google Colab - deep learning [_here_](https://colab.research.google.com/drive/1kx3xTkQlXvd9BFqhah-TFIcSVgmnih5d). <!-- If you have the project hosted somewhere, include the link here. -->
+> Machine vision algorithm utilized for damage inspection of the cutting inserts used in lathe machine. Project utilizes hybrid approach to the image classification by using "clasical" and deep learning algorithms. Program is prepared for smart camera ADLINK NEON 2000 [ more_info ](https://www.adlinktech.com/Products/Deep_Learning_Accelerator_Platform_and_Server/AI_Machine_Vision_Devices/NEON-2000-JT2_Series).
 
 ## Table of Contents
 * [General Info](#general-information)
@@ -23,11 +22,13 @@
 
 
 ## Technologies Used
-- Python 3.9.5
-- TensorFlow 2.5.0
-- OpenCv 4.5.1
-- NumPy 1.20.2
+- Python 3.6.9
+- TensorFlow 2.3.1
+- OpenCv 4.3.0
+- NumPy 1.18.5
 - SciPy 1.6.2
+- JetPack 4.4 with following software enviornment [ more info here ](https://www.adlinktech.com/Products/Deep_Learning_Accelerator_Platform_and_Server/AI_Machine_Vision_Devices/NEON-2000-JT2_Series).
+
 
 
 ## Features
@@ -70,6 +71,6 @@ Project is: _in progress_
  
 
 
-
+## Google Colab project for training pourposes
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1q0ud51vhYlfaU56DseQxJFiGECGlMdUl#scrollTo=jFm_l3ABcbT3)
 
