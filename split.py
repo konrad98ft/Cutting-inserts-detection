@@ -29,6 +29,10 @@ print(PATHS)
 
 # Claer all prev images
 for dir in PATHS:
+    try: 
+        os.mkdir(dir) 
+    except OSError as error:    
+        print(error)  
     for f in os.listdir(dir):
         os.remove(os.path.join(dir, f))
 
@@ -42,14 +46,12 @@ for filename in os.listdir(PATH):
     # Show orginal and resized image
     img = cv.imread(os.path.join(PATH,filename))
     cv.imshow('Classify sample',img)
-    resized = cv.resize(img, (256,256), interpolation = cv.INTER_AREA)
+    resized = cv.resize(img, (500,500), interpolation = cv.INTER_AREA)
     cv.namedWindow('Resized',cv.WINDOW_FREERATIO)
     cv.imshow('Resized',resized)
     l+=1
     
    
-
-
     k = cv.waitKey(0)
         
     # Split images for learining~60% validation~20% testing~20%  

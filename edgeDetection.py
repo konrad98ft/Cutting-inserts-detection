@@ -1,84 +1,43 @@
-import cv2 as cv
+
 import numpy as np
-import random as rng
-import matplotlib.pyplot as plt
+import cv2 as cv
+
 import math
-import sys
-from numpy.core.fromnumeric import shape 
-from scipy.optimize import fsolve
+from numpy.core.fromnumeric import shape
+from numpy.core.numeric import rollaxis 
 from scipy import ndimage
 import time
-from skimage.filters import threshold_otsu
+import warnings
+import sys
 
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from skimage import data
 from skimage.filters import threshold_otsu
 from skimage.segmentation import clear_border
 from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage.color import label2rgb
-
+'''
 import tensorflow as tf
-from tensorflow import keras
-from keras.preprocessing import image
-
+import tensorflow.keras as keras 
+from tensorflow.keras.preprocessing import image
+'''
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 PATH = 'D:\\Python Image Processing\\cutting-inserts-detection\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
-PATH2 = 'D:\\Python Image Processing\\cutting-inserts-detection\\tensor_flow_samples\\'
-#PATH = 'D:\\python Image Processing\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
-model = keras.models.load_model('D:\\Python Image Processing\\cutting-inserts-detection\\model_sztuczne_wadliwe')
-PX2MM = 620/4 #R = 4mm R = 620px 
- 
-def findLinesPoints(roi,direction):   
-    pts = []
+PATH2 = 'C:\\Users\Konrad\\cutting-inserts-detection-master\\tensor_flow_samples\\'
+PATH3 = 'C:\\Users\Konrad\\cutting-inserts-detection-master\\standSamples\\'
 
-    kernel = np.ones((7,7),np.uint8)
-    roi = cv.morphologyEx(roi, cv.MORPH_OPEN, kernel)
-    roi = cv.Canny(roi,200,100)
-
-    # X direction searching
-    if(direction[1] == 1):              
-        x_range = (0,roi.shape[0],1)
-        y_range = (0,roi.shape[1]-1,1) 
-    if(direction[1] == -1): 
-        x_range = (roi.shape[0]-1,0,-1)  
-        y_range = (0,roi.shape[1]-1,1)              
-    # Y direction searching
-    if(direction[0] == 1): 
-        x_range = (0,roi.shape[1],1)
-        y_range = (roi.shape[0]-1,0,-1) 
-    if(direction[0] == -1):            
-        x_range = (roi.shape[1]-1,0,-1)
-        y_range = (roi.shape[0]-1,0,-1)  
-
-    drawing = np.zeros((roi.shape[0], roi.shape[1], 3), dtype=np.uint8)
-    for y in range(y_range[0],y_range[1],y_range[2]): #y_range
-        for x in range(x_range[0],x_range[1],x_range[2]): #x_range
-  
-            if(direction[1] != 0):
-                if(roi[x,y] > 0):            
-                    pts.append([y,x])
-                    drawing[x,y]=(0,255,0)
-                    break
-
-            if(direction[0] != 0): 
-                if(roi[y,x] > 0):               
-                    pts.append([x,y])
-                    drawing[y,x]=(0,0,255)                    
-                    break
-    
-    ### Visualization
-    cv.namedWindow('findLinesPoints', cv.WINDOW_NORMAL)
-    cv.imshow('findLinesPoints',drawing)             
-
-    return pts
+#model = keras.models.load_model('C:\\Users\\Konrad\\cutting-inserts-detection-master\\model_sztuczne_wadliwe2')
+PX2MM = 580/4 #R = 4mm R = 620px 
  
 def linesFiltration(roi,direction):
     # Define kernels
-    kernel1 = np.array([[-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1],[2,2,2,2,2,2,2],[4,4,4,4,4,4,4],[2,2,2,2,2,2,2],[-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1]])
-    kernel2 = np.array([[-1,-1,2,4,2,-1,-1],[-1,-1,2,4,2,-1,-1],[-1,-1,2,4,2,-1,-1],[-1,-1,2,4,2,-1,-1],[-1,-1,2,4,2,-1,-1]])
+    a = [-2,-1,1,6,1,-1,-2]
+    kernel1 = np.array([[a[0],a[0],a[0],a[0],a[0],a[0],a[0]],[a[1],a[1],a[1],a[1],a[1],a[1],a[1]],[a[2],a[2],a[2],a[2],a[2],a[2],a[2]],
+                       [a[3],a[3],a[3],a[3],a[3],a[3],a[3]],
+                       [a[2],a[2],a[2],a[2],a[2],a[2],a[2]],[a[1],a[1],a[1],a[1],a[1],a[1],a[1]],[a[0],a[0],a[0],a[0],a[0],a[0],a[0]]])
+    kernel2 = np.array([a,a,a,a,a])
     
     # Chose kernel proper for defined direction
     if(direction[1]!=0): kernel = kernel1
@@ -87,33 +46,70 @@ def linesFiltration(roi,direction):
     roi2 = cv.filter2D(roi,-1,kernel)
     
     #Show filter effect
-    '''cv.namedWindow('linesFiltration', cv.WINDOW_NORMAL)
-    cv.imshow('linesFiltration',roi2) '''
-   
+    cv.namedWindow('linesFiltration', cv.WINDOW_NORMAL)
+    cv.imshow('linesFiltration',roi2)
+
     return roi2
 
+def findLinesPoints(roi,direction):   
+    
+    # Some preprocessing
+    kernel = np.ones((7,7),np.uint8)
+    roi = cv.morphologyEx(roi, cv.MORPH_OPEN, kernel)
+    roi = cv.Canny(roi,100,30)
+    ### Visualization
+    cv.namedWindow('findLinesPoints', cv.WINDOW_NORMAL)
+    cv.imshow('findLinesPoints',roi)  
+    
+    # Rotate image to ensure proper searching direction
+    if(direction[0] == -1): roi = cv.flip(roi, 1) 
+    if(direction[1] != 0): 
+        roi =  cv.rotate(roi, cv.ROTATE_90_CLOCKWISE)
+        if(direction[1] == -1): roi = cv.flip(roi, 1)  
+
+    # Find min non zero val in each row
+    rows,cols = roi.shape
+    drawing = np.zeros((rows, cols), dtype=np.uint8)
+    for r in range(rows):
+        non_zero_values=np.flatnonzero(roi[r])
+        if any(non_zero_values): 
+            drawing.itemset((r,non_zero_values[0]),255)
+
+    # Rotate image to go back to the base coordinates
+    if(direction[0] == -1): drawing = cv.flip(drawing, 1) 
+    if(direction[1] != 0): 
+        if(direction[1] == -1): drawing = cv.flip(drawing, 1) 
+        drawing =  cv.rotate(drawing, cv.ROTATE_90_COUNTERCLOCKWISE)
+         
+    # Find outer line points 
+    pts = []
+    pts = cv.findNonZero(drawing)
+
+    ### Visualization
+    cv.namedWindow('findLinesPoints4', cv.WINDOW_NORMAL)
+    cv.imshow('findLinesPoints4',drawing)         
+    return pts
+ 
 def searchingBox(image, points, direction=(0,1)): 
-    ### points = (x1,x2,y1,y2) direction = (x_dir,y_dir) ###
+    
+    ### points = (x1,y1,dx1,dy2) direction = (x_dir,y_dir) ###
+    pts = (points[0],(points[0]+points[2]),points[1],(points[1]+points[3]))
 
     # Apply ROI
-    roi = image.copy()[points[2]:points[3],points[0]:points[1]]
-    
-    # Treshold
-    ret,roi = cv.threshold(roi,100,255,cv.THRESH_TOZERO)
-    
-    ### Visualization - show ROI
-    '''cv.namedWindow('Searching Box', cv.WINDOW_NORMAL)
-    cv.imshow('Searching Box',  roi)
-    cv.resizeWindow('Searching Box', points[1]-points[0], points[3]-points[2] )'''
+    roi = image.copy()[pts[2]:pts[3],pts[0]:pts[1]]
 
+    # Treshold
+    ret,roi = cv.threshold(roi,150,255,cv.THRESH_TOZERO)
+    
+    
     # Find points with belongs to the edge
     roi = linesFiltration(roi,direction)
     pts = findLinesPoints(roi,direction)
    
     # Break in case of faulty input image
-    if(len(pts) < 2):
+    if(pts is None):
         print("Any line found")
-        sys.exit(1) 
+        return -1,-1,-1,-1  
 
     # Fit line
     vector = np.array(pts)
@@ -121,18 +117,17 @@ def searchingBox(image, points, direction=(0,1)):
     
     # Show ROI and fitted line on the orgnial image  
     x = x + points[0]   # Go back to the global coordinate system
-    y = y + points[2]
+    y = y + points[1]
     line = vx,vy,x,y
 
     k = 10000
     p1 = (int(x - k*vx), int(y - k * vy))
     p2 = (int(x + k*vx), int(y + k * vy))
-    cv.line(image, p1,p2 , (255,255,255), 3, cv.LINE_AA, 0)
-    cv.rectangle(image,(points[0],points[2]),(points[1],points[3]),(255,255,255),2)
-    '''cv.namedWindow('ROI', cv.WINDOW_NORMAL)
-    cv.imshow('ROI',image)
-    cv.resizeWindow('ROI',800,600)'''
-
+    cv.line(img, p1,p2 , (255,255,255), 3, cv.LINE_AA, 0)
+    cv.rectangle(img,(points[0],points[1],points[2],points[3]),(255,255,255),2)
+    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
+    cv.imshow(str(img_index), img)
+    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
     return line 
      
 def findArcPoint(image,line1,line2):
@@ -146,13 +141,10 @@ def findArcPoint(image,line1,line2):
     rot_ang = math.atan2(vy2,vx2) 
     vy =  abs( vx1 +  vx2 ) if vy2 < 0 else abs( vy1 +  vy2 )
     vx = abs( vy1 +  vy2 ) if vy2 < 0 else abs( vx1 +  vx2 )
-    #print(vx1,vy1)
-    #print(vx2,vy2)
-    #print(vx,vy)
 
     l = math.sqrt(vx**2 + vy**2) # lenght of those vectors
     k = (PX2MM*4)/l # how many vectors is between line crossing point and cutting insert arc centre
-    p1 = (int(xs - k*vx), int(ys - k * vy))
+    p1 = (int(xs + k*vx), int(ys + k * vy))
     p2 = (int(xs ), int(ys ))
     cv.line(img, p1,p2 , (255,255,255), 2, cv.LINE_AA, 0)
 
@@ -200,30 +192,44 @@ def findArcPoint(image,line1,line2):
     cv.namedWindow('Arc ROI', cv.WINDOW_NORMAL)    
     cv.imshow('Arc ROI', roi)
     cv.resizeWindow('Arc ROI', roi.shape[1],roi.shape[0]) 
+    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
+    cv.imshow(str(img_index), img)
+    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
 
     # Polar transform and filtration
     try:
         roi = polarTransform(roi,start_point=(0,0),r=(int(PX2MM*1),int(PX2MM*2.25)),theta=90,theta_inc=0.25)
     except:
         roi = roi
-    ret,roi2 = cv.threshold(roi,80,255,cv.THRESH_TOZERO)
-    roi2 = linesFiltration(roi2,(0,-1))
-    pts = findLinesPoints(roi2,(0,-1))
-    if(len(pts) < 2):
-        print("Any line found")
-        sys.exit(1) 
-    pts_y = []
-    for i in range(len(pts)): pts_y.append(pts[i][1])
+        print("Can't find cutting insert arc")
+        return -1
 
-    s = srednia(pts_y) 
-    m = mediana(pts_y)  
-    o = odchylenie(pts_y, s)  
-    print("Średnia: {:.2f}\nMediana: {:.2f}\nOdchylenie standardowe: {:.2f}".format(s,m,o))
-    if(s < 137 and s > 129) and o < 1.5:
-        cv.putText(img,('OK    '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
-    else:
-        cv.putText(img,('N_OK   '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
-   
+    ### Visualization ###
+    cv.namedWindow('Arc ROI2', cv.WINDOW_NORMAL)    
+    cv.imshow('Arc ROI2', roi)
+    cv.resizeWindow('Arc ROI2', roi.shape[1],roi.shape[0]) 
+
+    
+    ret,roi2 = cv.threshold(roi,150,255,cv.THRESH_TOZERO)
+    roi2 = linesFiltration(roi2,(0,-1))
+    pts = findLinesPoints(roi2,(0,1))
+
+    if(pts is None):
+        print("Any line found")
+        return -1
+    else: 
+        pts_y = []
+        for i in range(len(pts)): pts_y.append(pts[i][0][1])
+
+        s = srednia(pts_y) 
+        m = mediana(pts_y)  
+        o = odchylenie(pts_y, s)  
+        print("Średnia: {:.2f}\nMediana: {:.2f}\nOdchylenie standardowe: {:.2f}".format(s,m,o))
+        if(s < 137 and s > 129) and o < 1.5:
+            cv.putText(img,('OK    '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
+        else:
+            cv.putText(img,('N_OK   '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
+    
     ### Visualization ###
     '''cv.namedWindow('orginal ROI', cv.WINDOW_NORMAL)
     cv.imshow('orginal ROI', roi)
@@ -245,7 +251,7 @@ def polarTransform(roi,start_point,r,theta,theta_inc):
         yk = int(math.cos(math.radians(alpha))*r[1])
   
         roid = cv.cvtColor(roi,cv.COLOR_GRAY2BGR)
-        #cv.waitKey(1) ### Visualization ###
+        
         for R in range(r[0],r[1]):
             x = int(math.sin(math.radians(alpha))*R)+x0
             y = int(math.cos(math.radians(alpha))*R)+y0
@@ -261,8 +267,9 @@ def polarTransform(roi,start_point,r,theta,theta_inc):
 
             cv.namedWindow('polar roi', cv.WINDOW_NORMAL)
             cv.imshow('polar roi', roi2)
-            cv.resizeWindow('polar roi',roi2.shape[1],roi2.shape[0])'''
-            
+            cv.resizeWindow('polar roi',roi2.shape[1],roi2.shape[0])
+            cv.waitKey(1)'''
+        
 
     return roi2  
 
@@ -369,43 +376,21 @@ def printTime(str='time'):
     elapsed_time = time.time() - start_time
     print("{}: \t {:.3f}s".format(str,elapsed_time))
 
-
-for img_index in range(1,25):
-    # Get an image
-    img_path= PATH2 +"3_"+ str(img_index) +'.png'
-    img = cv.imread(img_path,-1)
-    img3 = img.copy()
-    try:
-        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)    
-    except:
-        print("Image not found")
-        sys.exit(1)
-    start_time = time.time()
-
-    # Find centre of the cutting insert
-    XC,YC = findInsertCentreOtsu(img)
-
+def deepL(image):
+   
     # Reshape image for deepL clasification
-    Xdim = 1100
-    Ydim = 650
-    start_point = (XC, YC)
-    end_point = (int(XC+Xdim), int(YC+Ydim))
-    deepL_img = img3.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
+    XC,YC = 1480,1220
+    Xdim, Ydim = 1000, 600
+    end_point = (XC, YC)
+    start_point = (int(XC-Xdim), int(YC-Ydim))
+    deepL_img = img3[start_point[1]:end_point[1],start_point[0]:end_point[0]]
     deepL_img = cv.resize(deepL_img, (150,150), interpolation = cv.INTER_AREA)
-    printTime("Time-centre")
+    ### Visualization
+    cv.namedWindow("deepL_img", cv.WINDOW_FREERATIO)
+    cv.imshow("deepL_img", deepL_img)
+    cv.resizeWindow("deepL_img", int(deepL_img.shape[1]),int(deepL_img.shape[0])) 
 
-    # Find lines to define arc centre
-    X_offset = 1030
-    Y_offset = 530 
-    img2 = img.copy()  
-    line1 = searchingBox(img,(XC-X_offset+350,XC+X_offset-350,YC+Y_offset-150,YC+Y_offset+150),(0,-1))
-    line2 = searchingBox(img,(XC+X_offset-150,XC+X_offset+150,YC-Y_offset+300,YC+Y_offset-300),(-1,0))  
-    printTime("Time-lines")
-
-    # Find breaches
-    findArcPoint(img2,line1,line2)
-    printTime("Time-breaches")  
-
+    # Clasification
     classification = []
     x = image.img_to_array(deepL_img)
     x = np.expand_dims(x, axis=0)
@@ -419,16 +404,51 @@ for img_index in range(1,25):
         title =  "is faulty  " + str(round(float((1-classes)*100),2)) + "%"
     print(title)
     cv.putText(img,title,(100,300), cv.FONT_HERSHEY_PLAIN, 5,255,2)
-    printTime("Time-deepl")  
+
+
+
+
+for img_index in range(1,15):
+    # Get an image
+    img_path= PATH3 + str(img_index) +'.png'
+    img = cv.imread(img_path,-1)
+    img3 = img.copy()
+    try:
+        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)    
+    except:
+        print("Image not found")
+        sys.exit(1)
+    start_time = time.time()
+
+    # Find lines to define arc centre
+    img2 = img.copy()
+    cv.rectangle(img,(1000,600,800,250),(255,255,255),2)
+    cv.rectangle(img,(375,1050,300,250),(255,255,255),2)
+    # Show effects
+    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
+    cv.imshow(str(img_index), img)
+    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
+    cv.waitKey(1)
+    printTime("Not important time")
+
+    line1 = searchingBox(img2,(1000,600,800,250),(0,-1))
+    line2 = searchingBox(img2,(375,1050,300,250),(1,0)) 
+    printTime("Detecting lines")
+
+    # Find breaches
+    findArcPoint(img2,line1,line2) 
+    printTime("Examine edge")
+
+    # DeepL clacification
+    #deepL(img3)
+    
 
     # Show effects
     cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
     cv.imshow(str(img_index), img)
     cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
 
-    cv.namedWindow("deepL_img", cv.WINDOW_FREERATIO)
-    cv.imshow("deepL_img", deepL_img)
-    cv.resizeWindow("deepL_img", int(deepL_img.shape[1]),int(deepL_img.shape[0])) 
+
     
     cv.waitKey(0)
     cv.destroyAllWindows()

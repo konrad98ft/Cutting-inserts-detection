@@ -9,9 +9,9 @@ import time
 from skimage.filters import threshold_otsu
 
 
-PATH = 'D:\\Python Image Processing\\cutting-inserts-detection\\tensor_flow_samples\\'
-PATH2 = 'D:\\Python Image Processing\\cutting-inserts-detection\\samples2\\'
-SERIES='2_'
+PATH = r'C:\Users\Konrad\cutting-inserts-detection-master\tensor_flow_samples'
+PATH2 = r'C:\Users\Konrad\cutting-inserts-detection-master\samples2'
+SERIES='1_'
 
 
 #Kapur threshold
@@ -60,7 +60,8 @@ def otsu_threshold(image=None, hist=None):
 
 #  Get an image
 for img_index in range(1,34):
-    img_path= PATH + SERIES + str(img_index) +'.png'
+    img_path= PATH +'\\' +SERIES + str(img_index) +'.png'
+    print(img_path)
     img = cv.imread(img_path,-1)
     try:
         img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)    
@@ -122,25 +123,25 @@ for img_index in range(1,34):
     end_point = (XC+int(Xdim), YC)
     img = cv.rectangle(img, start_point, end_point, 255, 2)
     img2 = img.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
-    cv.imwrite(PATH2+SERIES+str(img_index)+'_1.png', img2)
+    cv.imwrite(PATH2+"\\"+SERIES+str(img_index)+'_1.png', img2)
 
     start_point = (XC, YC)
     end_point = (int(XC+Xdim), int(YC+Ydim))
     img = cv.rectangle(img, start_point, end_point, 255, 2)
     img2 = img.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
-    cv.imwrite(PATH2+SERIES+str(img_index)+'_2.png', img2)
+    cv.imwrite(PATH2+"\\"+SERIES+str(img_index)+'_2.png', img2)
     
     start_point = (int(XC-Xdim), int(YC-Ydim))
     end_point = (XC, YC)
     img = cv.rectangle(img, start_point, end_point, 255, 2)
     img2 = img.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
-    cv.imwrite(PATH2+SERIES+str(img_index)+'_3.png', img2)
+    cv.imwrite(PATH2+"\\"+SERIES+str(img_index)+'_3.png', img2)
 
     start_point = (int(XC-Xdim), YC)
     end_point = (XC, int(YC+Ydim))
     img = cv.rectangle(img, start_point, end_point, 255, 2)
     img2 = img.copy()[start_point[1]:end_point[1],start_point[0]:end_point[0]]
-    cv.imwrite(PATH2+SERIES+str(img_index)+'_4.png', img2)
+    cv.imwrite(PATH2+"\\"+SERIES+str(img_index)+'_4.png', img2)
     
     cv.namedWindow("out", cv.WINDOW_FREERATIO)
     cv.imshow("out", img)

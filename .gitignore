@@ -1,5 +1,6 @@
 samples/
 samples2/
+standSamples/
 samples_good/
 samples_good2/
 samples_faulty/
@@ -24,3 +25,5 @@ DATA_SET_4/
 DATA_SET_5/
 DATA_SET_6/
 model_sztuczne_wadliwe/
+model_sztuczne_wadliwe2/
+model_xception/
