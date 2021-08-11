@@ -1,28 +1,27 @@
 
 import numpy as np
 import cv2 as cv
-
 import math
-from numpy.core.fromnumeric import shape
-from numpy.core.numeric import rollaxis 
 from scipy import ndimage
 import time
 import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 import sys
 
 
-from skimage import data
+'''from skimage import data
 from skimage.filters import threshold_otsu
 from skimage.segmentation import clear_border
 from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
-from skimage.color import label2rgb
+from skimage.color import label2rgb'''
+
 '''
 import tensorflow as tf
 import tensorflow.keras as keras 
 from tensorflow.keras.preprocessing import image
 '''
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
 
 PATH = 'C:\\Users\Konrad\\cutting-inserts-detection-master\\standSamples\\'
 
@@ -43,9 +42,7 @@ def linesFiltration(roi,direction):
     
     roi2 = cv.filter2D(roi,-1,kernel)
     
-    '''#Show filter effect
-    cv.namedWindow('linesFiltration', cv.WINDOW_NORMAL)
-    cv.imshow('linesFiltration',roi2)'''
+    #showResizedImg(roi2,'linesFiltration',scale = 2 ) ### Visualization
 
     return roi2
 
@@ -54,10 +51,9 @@ def findLinesPoints(roi,direction):
     kernel = np.ones((7,7),np.uint8)
     roi = cv.morphologyEx(roi, cv.MORPH_OPEN, kernel)
     roi = cv.Canny(roi,100,30)
-    '''### Visualization
-    cv.namedWindow('findLinesPoints', cv.WINDOW_NORMAL)
-    cv.imshow('findLinesPoints',roi)  '''
-    
+
+    #showResizedImg(roi,'findLinesPoints1',scale = 2 ) ### Visualization
+
     # Rotate image to ensure proper searching direction
     if(direction[0] == -1): roi = cv.flip(roi, 1) 
     if(direction[1] != 0): 
@@ -82,9 +78,7 @@ def findLinesPoints(roi,direction):
     pts = []
     pts = cv.findNonZero(drawing)
 
-    '''### Visualization
-    cv.namedWindow('findLinesPoints4', cv.WINDOW_NORMAL)
-    cv.imshow('findLinesPoints4',drawing) '''        
+    #showResizedImg(drawing,'findLinesPoints2',scale = 2 ) ### Visualization     
     return pts
  
 def searchingBox(image, points, direction=(0,1)):  
@@ -121,9 +115,7 @@ def searchingBox(image, points, direction=(0,1)):
     p2 = (int(x + k*vx), int(y + k * vy))
     cv.line(img, p1,p2 , (255,255,255), 3, cv.LINE_AA, 0)
     cv.rectangle(img,(points[0],points[1],points[2],points[3]),(255,255,255),2)
-    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
-    cv.imshow(str(img_index), img)
-    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
+    showResizedImg(img,str(img_index),scale = 0.5 ) ### Visualization 
     return line 
      
 def findArcPoint(image,line1,line2):
@@ -144,14 +136,13 @@ def findArcPoint(image,line1,line2):
     p2 = (int(xs ), int(ys ))
     cv.line(img, p1,p2 , (255,255,255), 2, cv.LINE_AA, 0)
 
-    
     # Find 4 possible arc centres of the cutting insert
     C = [] # coortinates of the 4 possible arc centres
-    v = np.array([[vx,vy],[-vx,vy],[-vx,-vy],[vx,-vy]], dtype='float')  # all possible direction of the vectors
+    v = np.array([[vx,vy],[-vx,vy],[-vx,-vy],[vx,-vy]], dtype='float')  # All possible direction of the vectors
 
     for i in range(len(v)): # all possible configurations
         pom = xs + v[i][0]*k  , ys + v[i][1]*k
-        cv.circle(img,(int(xs + v[i][0]*k),int(ys + v[i][1]*k)),1,(255,255,255),4) ### Visualization ###
+        cv.circle(img,(int(xs + v[i][0]*k),int(ys + v[i][1]*k)),1,(255,255,255),4) ### Visualization 
         C.append(pom)
  
     # Chose ROI with contains cutting insert arc - closest to the centre of the image
@@ -183,14 +174,9 @@ def findArcPoint(image,line1,line2):
     cv.circle(img,(int(R[2]),int(R[3])),int(PX2MM*4),(255,255,255),3) # Lines intersection
     cv.circle(img,(int(xc),int(yc)),5,(255,255,255),3) # Arc centre
     cv.circle(img,(int(xc),int(yc)),int(PX2MM*4/math.sqrt(2)),(255,255,255),2) # Arc radius
+    #showResizedImg(roi,'Arc ROI',scale = 1 ) ### Visualization 
+    showResizedImg(img,str(img_index),scale = 0.5 ) ### Visualization 
 
-    ### Visualization ###
-    '''cv.namedWindow('Arc ROI', cv.WINDOW_NORMAL)    
-    cv.imshow('Arc ROI', roi)
-    cv.resizeWindow('Arc ROI', roi.shape[1],roi.shape[0]) 
-    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
-    cv.imshow(str(img_index), img)
-    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) '''
     printTime("Find arc prep")
 
     # Polar transform and filtration
@@ -201,10 +187,7 @@ def findArcPoint(image,line1,line2):
         print("Can't find cutting insert arc")
         return -1
 
-    ### Visualization ###
-    cv.namedWindow('Arc ROI2', cv.WINDOW_NORMAL)    
-    cv.imshow('Arc ROI2', roi)
-    cv.resizeWindow('Arc ROI2', roi.shape[1],roi.shape[0]) 
+    #showResizedImg(roi,'Arc ROI after polar transform',scale = 2 ) ### Visualization 
 
     #Find edge on the image after polarTransform
     ret,roi2 = cv.threshold(roi,150,255,cv.THRESH_TOZERO)
@@ -222,26 +205,19 @@ def findArcPoint(image,line1,line2):
         s = statatistics.srednia(pts_y) 
         m = statatistics.mediana(pts_y)  
         o = statatistics.odchylenie(pts_y, s)  
-        print("Średnia: {:.2f}\nMediana: {:.2f}\nOdchylenie standardowe: {:.2f}".format(s,m,o))
+        #print("Średnia: {:.2f}\nMediana: {:.2f}\nOdchylenie standardowe: {:.2f}".format(s,m,o))
         if(s < 137 and s > 129) and o < 1.5:
             cv.putText(img,('OK    '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
         else:
             cv.putText(img,('N_OK   '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
     
-    ### Visualization ###
-    '''cv.namedWindow('orginal ROI', cv.WINDOW_NORMAL)
-    cv.imshow('orginal ROI', roi)
-    cv.resizeWindow('orginal ROI', (rxk-rx0)*3,(ryk-ry0)*3)
-
-    cv.namedWindow('binary ROI', cv.WINDOW_NORMAL)
-    cv.imshow('binary ROI', roi2)
-    cv.resizeWindow('binary ROI', (rxk-rx0)*3,(ryk-ry0)*3) '''
+    #showResizedImg(roi,'Orginal Arc',scale = 3 ) ### Visualization 
+    #showResizedImg(roi2,'Binary Arc',scale = 3 ) ### Visualization 
 
 def polarTransform(roi,start_point,r,theta,theta_inc):
     drawing = np.zeros((roi.shape[0], roi.shape[1]), dtype=np.uint8)
     roi2 = np.zeros((int(r[1]-r[0]),int(theta/theta_inc)+1), dtype=np.uint8)
     theta_range = np.arange(0, theta, theta_inc)
-    printTime("Find arc prep 2")
 
     for alpha in theta_range:
         x0 = int(math.sin(math.radians(alpha))*r[0])
@@ -259,16 +235,10 @@ def polarTransform(roi,start_point,r,theta,theta_inc):
             ### Visualization ###
             '''cv.circle(drawing,(x,y),1,(0,0,255),1)
             drawing = cv.bitwise_or(drawing, roid)
-            cv.namedWindow('polar lines', cv.WINDOW_NORMAL)
-            cv.imshow('polar lines', drawing)
-            cv.resizeWindow('polar lines',drawing.shape[0],drawing.shape[1])
-
-            cv.namedWindow('polar roi', cv.WINDOW_NORMAL)
-            cv.imshow('polar roi', roi2)
-            cv.resizeWindow('polar roi',roi2.shape[1],roi2.shape[0])
+            showResizedImg(drawing,'Polar lines',scale = 1 ) ### Visualization 
+            showResizedImg(roi2,'Polar ROI',scale = 1 ) ### Visualization 
             cv.waitKey(1)'''
         
-    printTime("polar transform finished")
     return roi2  
 
 class ExamineArc:
@@ -388,10 +358,7 @@ def deepL(image):
     start_point = (int(XC-Xdim), int(YC-Ydim))
     deepL_img = img3[start_point[1]:end_point[1],start_point[0]:end_point[0]]
     deepL_img = cv.resize(deepL_img, (150,150), interpolation = cv.INTER_AREA)
-    ### Visualization
-    cv.namedWindow("deepL_img", cv.WINDOW_FREERATIO)
-    cv.imshow("deepL_img", deepL_img)
-    cv.resizeWindow("deepL_img", int(deepL_img.shape[1]),int(deepL_img.shape[0])) 
+    showResizedImg(deepL_img,'DeepL_img',scale = 2 ) ### Visualization 
 
     # Clasification
     classification = []
@@ -402,13 +369,17 @@ def deepL(image):
     classes = model.predict(image_tensor)
 
     if classes > 0.5:
-        title =  "is good  " + str(round(float((classes)*100),2)) + "%"
+        title =  "płytka dobra  " + str(round(float((classes)*100),2)) + "%"
     else:
-        title =  "is faulty  " + str(round(float((1-classes)*100),2)) + "%"
+        title =  "płytka wadliwa  " + str(round(float((1-classes)*100),2)) + "%"
     print(title)
     cv.putText(img,title,(100,300), cv.FONT_HERSHEY_PLAIN, 5,255,2)
 
-
+def showResizedImg(image,windowName="test",scale=1):
+    cv.namedWindow(windowName, cv.WINDOW_NORMAL)
+    cv.imshow(windowName,image)
+    windowShape = (int(image.shape[1]*scale),int(image.shape[0]*scale)) 
+    cv.resizeWindow(windowName,windowShape)
 
 #-----------------------------------Main Loop------------------------------#
 for img_index in range(1,15):
@@ -427,11 +398,7 @@ for img_index in range(1,15):
     img2 = img.copy()
     cv.rectangle(img,(1000,600,800,250),(255,255,255),2)
     cv.rectangle(img,(375,1050,300,250),(255,255,255),2)
-    
-    # Show effects
-    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
-    cv.imshow(str(img_index), img)
-    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
+    showResizedImg(img,str(img_index),scale = 0.5 ) ### Visualization 
     cv.waitKey(1)
     printTime("Not important time")
 
@@ -447,11 +414,8 @@ for img_index in range(1,15):
     # DeepL clacification
     #deepL(img3)
     
-    # Show effects
-    cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
-    cv.imshow(str(img_index), img)
-    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
- 
+    showResizedImg(img,str(img_index),scale = 0.5 ) ### Visualization 
+
     cv.waitKey(0)
     cv.destroyAllWindows()
 #-------------------------------Main Loop End------------------------------#
