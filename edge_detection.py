@@ -24,9 +24,7 @@ from tensorflow.keras.preprocessing import image
 '''
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
-PATH = 'D:\\Python Image Processing\\cutting-inserts-detection\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
-PATH2 = 'C:\\Users\Konrad\\cutting-inserts-detection-master\\tensor_flow_samples\\'
-PATH3 = 'C:\\Users\Konrad\\cutting-inserts-detection-master\\standSamples\\'
+PATH = 'C:\\Users\Konrad\\cutting-inserts-detection-master\\standSamples\\'
 
 #model = keras.models.load_model('C:\\Users\\Konrad\\cutting-inserts-detection-master\\model_sztuczne_wadliwe2')
 PX2MM = 580/4 #R = 4mm R = 620px 
@@ -45,21 +43,20 @@ def linesFiltration(roi,direction):
     
     roi2 = cv.filter2D(roi,-1,kernel)
     
-    #Show filter effect
+    '''#Show filter effect
     cv.namedWindow('linesFiltration', cv.WINDOW_NORMAL)
-    cv.imshow('linesFiltration',roi2)
+    cv.imshow('linesFiltration',roi2)'''
 
     return roi2
 
 def findLinesPoints(roi,direction):   
-    
     # Some preprocessing
     kernel = np.ones((7,7),np.uint8)
     roi = cv.morphologyEx(roi, cv.MORPH_OPEN, kernel)
     roi = cv.Canny(roi,100,30)
-    ### Visualization
+    '''### Visualization
     cv.namedWindow('findLinesPoints', cv.WINDOW_NORMAL)
-    cv.imshow('findLinesPoints',roi)  
+    cv.imshow('findLinesPoints',roi)  '''
     
     # Rotate image to ensure proper searching direction
     if(direction[0] == -1): roi = cv.flip(roi, 1) 
@@ -85,14 +82,13 @@ def findLinesPoints(roi,direction):
     pts = []
     pts = cv.findNonZero(drawing)
 
-    ### Visualization
+    '''### Visualization
     cv.namedWindow('findLinesPoints4', cv.WINDOW_NORMAL)
-    cv.imshow('findLinesPoints4',drawing)         
+    cv.imshow('findLinesPoints4',drawing) '''        
     return pts
  
-def searchingBox(image, points, direction=(0,1)): 
-    
-    ### points = (x1,y1,dx1,dy2) direction = (x_dir,y_dir) ###
+def searchingBox(image, points, direction=(0,1)):  
+    # Specify ROI
     pts = (points[0],(points[0]+points[2]),points[1],(points[1]+points[3]))
 
     # Apply ROI
@@ -100,7 +96,6 @@ def searchingBox(image, points, direction=(0,1)):
 
     # Treshold
     ret,roi = cv.threshold(roi,150,255,cv.THRESH_TOZERO)
-    
     
     # Find points with belongs to the edge
     roi = linesFiltration(roi,direction)
@@ -120,6 +115,7 @@ def searchingBox(image, points, direction=(0,1)):
     y = y + points[1]
     line = vx,vy,x,y
 
+    # Drawing line 
     k = 10000
     p1 = (int(x - k*vx), int(y - k * vy))
     p2 = (int(x + k*vx), int(y + k * vy))
@@ -169,7 +165,7 @@ def findArcPoint(image,line1,line2):
     xc,yc=C[properArc] #proper arc centre coordinates
 
     # Build roi between arc centre(xc,yc) and lines crossing point (xs,ys) in dependece on their location 
-    inc = 100 #offset outer boundaries by some offset to avoid cutting the arc
+    inc = 100 # Offset outer boundaries by some offset to avoid cutting the arc
     rx0 = int(xc) if xc < xs else int(xs-inc) 
     ry0 = int(yc) if yc < ys else int(ys-inc)
     rxk = int(xc) if xc > xs else int(xs+inc) 
@@ -177,24 +173,25 @@ def findArcPoint(image,line1,line2):
     roi = image.copy()[ry0:ryk,rx0:rxk]
 
     # Rotate roi
-    ang =0
+    ang = 0
     if(xc>xs and yc<ys): ang = 90 
-    if(xc>xs and yc>ys): ang = 180 
-    if(xc<xs and yc>ys): ang = 270  
+    elif(xc>xs and yc>ys): ang = 180 
+    elif(xc<xs and yc>ys): ang = 270  
     roi = ndimage.rotate(roi, ang)
 
     ### Visualization ###
-    cv.circle(img,(int(R[2]),int(R[3])),int(PX2MM*4),(255,255,255),3) #Lines intersection
-    cv.circle(img,(int(xc),int(yc)),5,(255,255,255),3) #Arc centre
-    cv.circle(img,(int(xc),int(yc)),int(PX2MM*4/math.sqrt(2)),(255,255,255),2) #Arc radius
+    cv.circle(img,(int(R[2]),int(R[3])),int(PX2MM*4),(255,255,255),3) # Lines intersection
+    cv.circle(img,(int(xc),int(yc)),5,(255,255,255),3) # Arc centre
+    cv.circle(img,(int(xc),int(yc)),int(PX2MM*4/math.sqrt(2)),(255,255,255),2) # Arc radius
 
     ### Visualization ###
-    cv.namedWindow('Arc ROI', cv.WINDOW_NORMAL)    
+    '''cv.namedWindow('Arc ROI', cv.WINDOW_NORMAL)    
     cv.imshow('Arc ROI', roi)
     cv.resizeWindow('Arc ROI', roi.shape[1],roi.shape[0]) 
     cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
     cv.imshow(str(img_index), img)
-    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
+    cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) '''
+    printTime("Find arc prep")
 
     # Polar transform and filtration
     try:
@@ -209,7 +206,7 @@ def findArcPoint(image,line1,line2):
     cv.imshow('Arc ROI2', roi)
     cv.resizeWindow('Arc ROI2', roi.shape[1],roi.shape[0]) 
 
-    
+    #Find edge on the image after polarTransform
     ret,roi2 = cv.threshold(roi,150,255,cv.THRESH_TOZERO)
     roi2 = linesFiltration(roi2,(0,-1))
     pts = findLinesPoints(roi2,(0,1))
@@ -220,10 +217,11 @@ def findArcPoint(image,line1,line2):
     else: 
         pts_y = []
         for i in range(len(pts)): pts_y.append(pts[i][0][1])
+        statatistics = ExamineArc
 
-        s = srednia(pts_y) 
-        m = mediana(pts_y)  
-        o = odchylenie(pts_y, s)  
+        s = statatistics.srednia(pts_y) 
+        m = statatistics.mediana(pts_y)  
+        o = statatistics.odchylenie(pts_y, s)  
         print("Średnia: {:.2f}\nMediana: {:.2f}\nOdchylenie standardowe: {:.2f}".format(s,m,o))
         if(s < 137 and s > 129) and o < 1.5:
             cv.putText(img,('OK    '+'srednia: {:.2f} odchylenie: {:.2f}').format(s,o),(100,100), cv.FONT_HERSHEY_PLAIN, 5,255,2)
@@ -238,29 +236,29 @@ def findArcPoint(image,line1,line2):
     cv.namedWindow('binary ROI', cv.WINDOW_NORMAL)
     cv.imshow('binary ROI', roi2)
     cv.resizeWindow('binary ROI', (rxk-rx0)*3,(ryk-ry0)*3) '''
-    
+
 def polarTransform(roi,start_point,r,theta,theta_inc):
-    drawing = np.zeros((roi.shape[0], roi.shape[1], 3), dtype=np.uint8)
-    roi2 = np.zeros((int(r[1]-r[0]),int(theta/theta_inc)+1, 1), dtype=np.uint8)
+    drawing = np.zeros((roi.shape[0], roi.shape[1]), dtype=np.uint8)
+    roi2 = np.zeros((int(r[1]-r[0]),int(theta/theta_inc)+1), dtype=np.uint8)
     theta_range = np.arange(0, theta, theta_inc)
+    printTime("Find arc prep 2")
 
     for alpha in theta_range:
         x0 = int(math.sin(math.radians(alpha))*r[0])
         y0 = int(math.cos(math.radians(alpha))*r[0])
-        xk = int(math.sin(math.radians(alpha))*r[1])
-        yk = int(math.cos(math.radians(alpha))*r[1])
   
         roid = cv.cvtColor(roi,cv.COLOR_GRAY2BGR)
         
         for R in range(r[0],r[1]):
             x = int(math.sin(math.radians(alpha))*R)+x0
             y = int(math.cos(math.radians(alpha))*R)+y0
-            cv.circle(drawing,(x,y),1,(0,0,255),1)
-              
-            roi2[R-r[0],int(alpha/theta_inc)] = roi[x,y]
+        
+            #roi2[R-r[0],int(alpha/theta_inc)] = roi[x,y]
+            roi2.itemset( R-r[0] , int(alpha/theta_inc) , roi.item(x,y) ) 
 
             ### Visualization ###
-            '''drawing = cv.bitwise_or(drawing, roid)
+            '''cv.circle(drawing,(x,y),1,(0,0,255),1)
+            drawing = cv.bitwise_or(drawing, roid)
             cv.namedWindow('polar lines', cv.WINDOW_NORMAL)
             cv.imshow('polar lines', drawing)
             cv.resizeWindow('polar lines',drawing.shape[0],drawing.shape[1])
@@ -270,28 +268,33 @@ def polarTransform(roi,start_point,r,theta,theta_inc):
             cv.resizeWindow('polar roi',roi2.shape[1],roi2.shape[0])
             cv.waitKey(1)'''
         
-
+    printTime("polar transform finished")
     return roi2  
 
-# Output analyze
-def srednia(pts):
-    suma = sum(pts)
-    return suma / float(len(pts))
-def mediana(pts):
-    pts.sort()
-    if len(pts) % 2 == 0:  
-        half = int(len(pts) / 2)
-        return float(sum(pts[half - 1:half + 1])) / 2.0
-    else: 
-        return pts[int(len(pts) / 2)] 
-def wariancja(pts, srednia):
-    sigma = 0.0
-    for ocena in pts:
-        sigma += (ocena - srednia)**2
-    return sigma / len(pts)
-def odchylenie(pts, srednia): 
-    w = wariancja(pts, srednia)
-    return math.sqrt(w)
+class ExamineArc:
+    # Used to analyze of the image processing results
+
+    def srednia(pts):
+        suma = sum(pts)
+        return suma / float(len(pts))
+    
+    def mediana(pts):
+        pts.sort()
+        if len(pts) % 2 == 0:  
+            half = int(len(pts) / 2)
+            return float(sum(pts[half - 1:half + 1])) / 2.0
+        else: 
+            return pts[int(len(pts) / 2)]
+
+    def wariancja(pts, srednia):
+        sigma = 0.0
+        for ocena in pts:
+            sigma += (ocena - srednia)**2
+        return sigma / len(pts)
+
+    def odchylenie(pts, srednia): 
+        w = ExamineArc.wariancja(pts, srednia)
+        return math.sqrt(w) 
 
 def findInsertCentreOtsu(img):
        
@@ -407,10 +410,10 @@ def deepL(image):
 
 
 
-
+#-----------------------------------Main Loop------------------------------#
 for img_index in range(1,15):
     # Get an image
-    img_path= PATH3 + str(img_index) +'.png'
+    img_path= PATH + str(img_index) +'.png'
     img = cv.imread(img_path,-1)
     img3 = img.copy()
     try:
@@ -424,6 +427,7 @@ for img_index in range(1,15):
     img2 = img.copy()
     cv.rectangle(img,(1000,600,800,250),(255,255,255),2)
     cv.rectangle(img,(375,1050,300,250),(255,255,255),2)
+    
     # Show effects
     cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
     cv.imshow(str(img_index), img)
@@ -431,6 +435,7 @@ for img_index in range(1,15):
     cv.waitKey(1)
     printTime("Not important time")
 
+    # Find lines in the bounding boxes
     line1 = searchingBox(img2,(1000,600,800,250),(0,-1))
     line2 = searchingBox(img2,(375,1050,300,250),(1,0)) 
     printTime("Detecting lines")
@@ -442,17 +447,14 @@ for img_index in range(1,15):
     # DeepL clacification
     #deepL(img3)
     
-
     # Show effects
     cv.namedWindow(str(img_index), cv.WINDOW_FREERATIO)
     cv.imshow(str(img_index), img)
     cv.resizeWindow(str(img_index), int(img.shape[1]/2),int(img.shape[0]/2)) 
-
-
-    
+ 
     cv.waitKey(0)
     cv.destroyAllWindows()
-
+#-------------------------------Main Loop End------------------------------#
 
 
 
