@@ -5,6 +5,7 @@ import math
 from numpy.core.fromnumeric import shape 
 import imutils
 import time
+from scipy import ndimage
 
 import tensorflow as tf
 import tensorflow.keras as keras
@@ -287,132 +288,17 @@ class ExamineArc:
         w = ExamineArc.wariancja(pts, srednia)
         return math.sqrt(w) 
 
-
-       
-    # Prepare image by finding conturs - otsu threshold
-    thresh_val = threshold_otsu(img)
-    ret,img2 = cv.threshold(img,thresh_val,255,cv.THRESH_TOZERO)
-
-    kernel = np.ones((5, 5), np.uint8)
-    edged = cv.erode(img2, kernel) 
-    kernel2 = np.ones((9, 9), np.uint8)
-    edged = cv.dilate(edged, kernel) 
-
-    # Reject small non-signifficant conturs
-    contours, hierarchy = cv.findContours(edged, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    cont2 = []
-    for i in range(len(contours)):
-        if(cv.contourArea(contours[i])>1000):
-            cont2.append(contours[i])
-
-    # Find bounding box        
-    minX = 9999
-    minY = 9999
-    maxX = 0
-    maxY = 0
-    for c in cont2:
-        for p in c:
-            if(minX>p[0][0]):minX=p[0][0]
-            if(maxX<p[0][0]):maxX=p[0][0]
-            if(minY>p[0][1]):minY=p[0][1]
-            if(maxY<p[0][1]):maxY=p[0][1]
-
-    XC = int((maxX + minX)/2)
-    YC = int((maxY + minY)/2)
-
-    # Centre of the cutting insert
-    Xdim = 1100
-    Ydim = 650
-    
-    return XC,YC
-
-
-
- 
-    # apply threshold
-    thresh = threshold_otsu(image)
-    bw = closing(image > thresh, square(3))
-
-
-    # remove artifacts connected to image border
-    cleared = clear_border(bw)
-
-
-    # label image regions
-    label_image = label(cleared)
-
-
-    printTime("Alt-2")
-    image_label_overlay = label2rgb(label_image, image=image, bg_label=0)
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.imshow(image_label_overlay)
-  
-    max_region = regionprops(label_image)[0]
-    printTime("Alt-2.2")
-    for region in regionprops(label_image):
-        # find the largest region
-        if region.area >= max_region.area:
-            max_region = region
-    printTime("Alt-3")
-    # draw rectangle around segmented coins
-    minr, minc, maxr, maxc = max_region.bbox
-    rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,fill=False, edgecolor='red', linewidth=2)
-    ax.add_patch(rect)
-    print("Angle:",rect)
-    printTime("Alt-4")
-
-    ax.set_axis_off()
-    plt.tight_layout()
-    plt.show()
-    return image
-
-    w = wariancja(pts, srednia)
-    return math.sqrt(w)
-
 # Deep learning clasification
-def deepL(image):
-   
-    # Reshape image for deepL clasification
-    XC,YC = 1480,1220
-    Xdim, Ydim = 1000, 600
-    end_point = (XC, YC)
-    start_point = (int(XC-Xdim), int(YC-Ydim))
-    deepL_img = img3[start_point[1]:end_point[1],start_point[0]:end_point[0]]
-    deepL_img = cv.resize(deepL_img, (224,224), interpolation = cv.INTER_AREA)
-    showResizedImg(deepL_img,'DeepL_img',scale = 2 ) ### Visualization 
-
-    # Clasification
-    classification = []
-    x = image.img_to_array(deepL_img)
-    x = np.expand_dims(x, axis=0)
-    x/=255
-    image_tensor = np.vstack([x])
-    classes = model.predict(image_tensor)
-
-    if classes > 0.5:
-        title =  "płytka dobra  " + str(round(float((classes)*100),2)) + "%"
-    else:
-        title =  "płytka wadliwa  " + str(round(float((1-classes)*100),2)) + "%"
-    print(title)
-    cv.putText(img,title,(100,300), cv.FONT_HERSHEY_PLAIN, 5,255,2)
-
-   
-    # Reshape image for deepL clasification
+def deepL(orgImg):
     XC,YC = 1480,1220
     Xdim, Ydim = 1000, 600
     end_point = (XC, YC)
     start_point = (int(XC-Xdim), int(YC-Ydim))
     deepL_img = orgImg[start_point[1]:end_point[1],start_point[0]:end_point[0]]
-    deepL_img = cv.resize(deepL_img, (150,150), interpolation = cv.INTER_AREA)
-    ### Visualization
-    #cv.namedWindow("deepL_img", cv.WINDOW_FREERATIO)
-    #cv.imshow("deepL_img", deepL_img)
-    #cv.resizeWindow("deepL_img", int(deepL_img.shape[1]),int(deepL_img.shape[0])) 
-    #cv.waitKey(1)
+    deepL_img = cv.resize(deepL_img, (224,224), interpolation = cv.INTER_AREA)
 
     # Clasification
     classification = []
-    # x = image.img_to_array(deepL_img)
     x = deepL_img.astype(np.float32)/255
     x = np.expand_dims(x, axis=0)
     image_tensor = np.vstack([x])

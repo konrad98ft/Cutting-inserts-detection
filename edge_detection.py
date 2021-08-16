@@ -9,28 +9,19 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 import sys
 
 
-'''from skimage import data
-from skimage.filters import threshold_otsu
-from skimage.segmentation import clear_border
-from skimage.measure import label, regionprops
-from skimage.morphology import closing, square
-from skimage.color import label2rgb'''
-
-'''
 import tensorflow as tf
 import tensorflow.keras as keras 
 from tensorflow.keras.preprocessing import image
-'''
 
 
-PATH = 'C:\\Users\Konrad\\cutting-inserts-detection-master\\standSamples\\'
+PATH = 'C:\\Users\Konrad\\cutting-inserts-detection\\stand_samples_final\\'
 
-#model = keras.models.load_model('C:\\Users\\Konrad\\cutting-inserts-detection-master\\model_sztuczne_wadliwe2')
+model = keras.models.load_model('C:\\Users\\Konrad\\cutting-inserts-detection-master\\model_sztuczne_wadliwe2')
 PX2MM = 580/4 #R = 4mm R = 620px 
  
 def linesFiltration(roi,direction):
     # Define kernels
-    a = [-2,-1,1,6,1,-1,-2]
+    a = [-2,-1,1,7,1,-1,-2]
     kernel1 = np.array([[a[0],a[0],a[0],a[0],a[0],a[0],a[0]],[a[1],a[1],a[1],a[1],a[1],a[1],a[1]],[a[2],a[2],a[2],a[2],a[2],a[2],a[2]],
                        [a[3],a[3],a[3],a[3],a[3],a[3],a[3]],
                        [a[2],a[2],a[2],a[2],a[2],a[2],a[2]],[a[1],a[1],a[1],a[1],a[1],a[1],a[1]],[a[0],a[0],a[0],a[0],a[0],a[0],a[0]]])
@@ -187,7 +178,7 @@ def findArcPoint(image,line1,line2):
     #showResizedImg(roi,'Arc ROI after polar transform',scale = 2 ) ### Visualization 
 
     #Find edge on the image after polarTransform
-    ret,roi2 = cv.threshold(roi,150,255,cv.THRESH_TOZERO)
+    ret,roi2 = cv.threshold(roi,130,255,cv.THRESH_TOZERO)
     roi2 = linesFiltration(roi2,(0,-1))
     pts = findLinesPoints(roi2,(0,1))
 
@@ -262,85 +253,6 @@ class ExamineArc:
         w = ExamineArc.wariancja(pts, srednia)
         return math.sqrt(w) 
 
-
-       
-    # Prepare image by finding conturs - otsu threshold
-    thresh_val = threshold_otsu(img)
-    ret,img2 = cv.threshold(img,thresh_val,255,cv.THRESH_TOZERO)
-
-    kernel = np.ones((5, 5), np.uint8)
-    edged = cv.erode(img2, kernel) 
-    kernel2 = np.ones((9, 9), np.uint8)
-    edged = cv.dilate(edged, kernel) 
-
-    # Reject small non-signifficant conturs
-    contours, hierarchy = cv.findContours(edged, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    cont2 = []
-    for i in range(len(contours)):
-        if(cv.contourArea(contours[i])>1000):
-            cont2.append(contours[i])
-
-    # Find bounding box        
-    minX = 9999
-    minY = 9999
-    maxX = 0
-    maxY = 0
-    for c in cont2:
-        for p in c:
-            if(minX>p[0][0]):minX=p[0][0]
-            if(maxX<p[0][0]):maxX=p[0][0]
-            if(minY>p[0][1]):minY=p[0][1]
-            if(maxY<p[0][1]):maxY=p[0][1]
-
-    XC = int((maxX + minX)/2)
-    YC = int((maxY + minY)/2)
-
-    # Centre of the cutting insert
-    Xdim = 1100
-    Ydim = 650
-    
-    return XC,YC
-
-
-
- 
-    # apply threshold
-    thresh = threshold_otsu(image)
-    bw = closing(image > thresh, square(3))
-
-
-    # remove artifacts connected to image border
-    cleared = clear_border(bw)
-
-
-    # label image regions
-    label_image = label(cleared)
-
-
-    printTime("Alt-2")
-    image_label_overlay = label2rgb(label_image, image=image, bg_label=0)
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.imshow(image_label_overlay)
-  
-    max_region = regionprops(label_image)[0]
-    printTime("Alt-2.2")
-    for region in regionprops(label_image):
-        # find the largest region
-        if region.area >= max_region.area:
-            max_region = region
-    printTime("Alt-3")
-    # draw rectangle around segmented coins
-    minr, minc, maxr, maxc = max_region.bbox
-    rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,fill=False, edgecolor='red', linewidth=2)
-    ax.add_patch(rect)
-    print("Angle:",rect)
-    printTime("Alt-4")
-
-    ax.set_axis_off()
-    plt.tight_layout()
-    plt.show()
-    return image
-
 def deepL(image):
    
     # Reshape image for deepL clasification
@@ -352,11 +264,10 @@ def deepL(image):
     deepL_img = cv.resize(deepL_img, (150,150), interpolation = cv.INTER_AREA)
     showResizedImg(deepL_img,'DeepL_img',scale = 2 ) ### Visualization 
 
-    # Clasification
+# Clasification
     classification = []
-    x = image.img_to_array(deepL_img)
+    x = deepL_img.astype(np.float32)/255
     x = np.expand_dims(x, axis=0)
-    x/=255
     image_tensor = np.vstack([x])
     classes = model.predict(image_tensor)
 
@@ -377,7 +288,7 @@ def printTime(str='time'):
     print("{}: \t {:.3f}s".format(str,elapsed_time))
 
 #-----------------------------------Main Loop------------------------------#
-for img_index in range(1,15):
+for img_index in range(1,20):
     # Get an image
     img_path= PATH + str(img_index) +'.png'
     img = cv.imread(img_path,-1)
@@ -407,7 +318,7 @@ for img_index in range(1,15):
     printTime("Examine edge")
 
     # DeepL clacification
-    #deepL(img3)
+    deepL(img3)
     
     showResizedImg(img,str(img_index),scale = 0.5 ) ### Visualization 
 
