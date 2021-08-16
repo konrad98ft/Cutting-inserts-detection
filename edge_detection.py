@@ -45,7 +45,6 @@ def linesFiltration(roi,direction):
     #showResizedImg(roi2,'linesFiltration',scale = 2 ) ### Visualization
 
     return roi2
-
 def findLinesPoints(roi,direction):   
     # Some preprocessing
     kernel = np.ones((7,7),np.uint8)
@@ -80,7 +79,6 @@ def findLinesPoints(roi,direction):
 
     #showResizedImg(drawing,'findLinesPoints2',scale = 2 ) ### Visualization     
     return pts
- 
 def searchingBox(image, points, direction=(0,1)):  
     # Specify ROI
     pts = (points[0],(points[0]+points[2]),points[1],(points[1]+points[3]))
@@ -117,7 +115,6 @@ def searchingBox(image, points, direction=(0,1)):
     cv.rectangle(img,(points[0],points[1],points[2],points[3]),(255,255,255),2)
     showResizedImg(img,str(img_index),scale = 0.5 ) ### Visualization 
     return line 
-     
 def findArcPoint(image,line1,line2):
     # Solving linear equation to find lines crossing point
     vx1,vy1,x1,y1 = line1
@@ -213,7 +210,6 @@ def findArcPoint(image,line1,line2):
     
     #showResizedImg(roi,'Orginal Arc',scale = 3 ) ### Visualization 
     #showResizedImg(roi2,'Binary Arc',scale = 3 ) ### Visualization 
-
 def polarTransform(roi,start_point,r,theta,theta_inc):
     drawing = np.zeros((roi.shape[0], roi.shape[1]), dtype=np.uint8)
     roi2 = np.zeros((int(r[1]-r[0]),int(theta/theta_inc)+1), dtype=np.uint8)
@@ -266,7 +262,7 @@ class ExamineArc:
         w = ExamineArc.wariancja(pts, srednia)
         return math.sqrt(w) 
 
-def findInsertCentreOtsu(img):
+
        
     # Prepare image by finding conturs - otsu threshold
     thresh_val = threshold_otsu(img)
@@ -345,10 +341,6 @@ def findInsertCentreOtsu(img):
     plt.show()
     return image
 
-def printTime(str='time'):
-    elapsed_time = time.time() - start_time
-    print("{}: \t {:.3f}s".format(str,elapsed_time))
-
 def deepL(image):
    
     # Reshape image for deepL clasification
@@ -380,6 +372,9 @@ def showResizedImg(image,windowName="test",scale=1):
     cv.imshow(windowName,image)
     windowShape = (int(image.shape[1]*scale),int(image.shape[0]*scale)) 
     cv.resizeWindow(windowName,windowShape)
+def printTime(str='time'):
+    elapsed_time = time.time() - start_time
+    print("{}: \t {:.3f}s".format(str,elapsed_time))
 
 #-----------------------------------Main Loop------------------------------#
 for img_index in range(1,15):
