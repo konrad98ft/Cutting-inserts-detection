@@ -8,15 +8,15 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 import sys
 
-
+'''
 import tensorflow as tf
 import tensorflow.keras as keras 
 from tensorflow.keras.preprocessing import image
-
+'''
 
 PATH = 'C:\\Users\Konrad\\cutting-inserts-detection\\stand_samples_final\\'
 
-model = keras.models.load_model('C:\\Users\\Konrad\\cutting-inserts-detection-master\\model_sztuczne_wadliwe2')
+#model = keras.models.load_model('C:\\Users\\Konrad\\cutting-inserts-detection-master\\model_sztuczne_wadliwe2')
 PX2MM = 580/4 #R = 4mm R = 620px 
  
 def linesFiltration(roi,direction):
@@ -318,7 +318,7 @@ for img_index in range(1,20):
     printTime("Examine edge")
 
     # DeepL clacification
-    deepL(img3)
+    #deepL(img3)
     
     showResizedImg(img,str(img_index),scale = 0.5 ) ### Visualization 
 

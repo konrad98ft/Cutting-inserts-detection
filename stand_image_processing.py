@@ -227,39 +227,30 @@ def findArcPoint(image,line1,line2):
     #showResizedImg(roi,'Orginal Arc',scale = 3 ) ### Visualization 
     #showResizedImg(roi2,'Binary Arc',scale = 3 ) ### Visualization 
 def polarTransform(roi,start_point,r,theta,theta_inc):
-    
-    drawing = np.zeros((roi.shape[0], roi.shape[1], 3), dtype=np.uint8)
-    roi2 = np.zeros((int(r[1]-r[0]),int(theta/theta_inc)+1, 1), dtype=np.uint8)
+    drawing = np.zeros((roi.shape[0], roi.shape[1]), dtype=np.uint8)
+    roi2 = np.zeros((int(r[1]-r[0]),int(theta/theta_inc)+1), dtype=np.uint8)
     theta_range = np.arange(0, theta, theta_inc)
-    
+
     for alpha in theta_range:
         x0 = int(math.sin(math.radians(alpha))*r[0])
         y0 = int(math.cos(math.radians(alpha))*r[0])
-        xk = int(math.sin(math.radians(alpha))*r[1])
-        yk = int(math.cos(math.radians(alpha))*r[1])
   
         roid = cv.cvtColor(roi,cv.COLOR_GRAY2BGR)
         
         for R in range(r[0],r[1]):
             x = int(math.sin(math.radians(alpha))*R)+x0
             y = int(math.cos(math.radians(alpha))*R)+y0
-            cv.circle(drawing,(x,y),1,(0,0,255),1)
-              
-            roi2[R-r[0],int(alpha/theta_inc)] = roi[x,y]
-            
+        
+            #roi2[R-r[0],int(alpha/theta_inc)] = roi[x,y]
+            roi2.itemset( R-r[0] , int(alpha/theta_inc) , roi.item(x,y) ) 
 
             ### Visualization ###
+            '''cv.circle(drawing,(x,y),1,(0,0,255),1)
             drawing = cv.bitwise_or(drawing, roid)
-            '''cv.namedWindow('polar lines', cv.WINDOW_NORMAL)
-            cv.imshow('polar lines', drawing)
-            cv.resizeWindow('polar lines',drawing.shape[0],drawing.shape[1])
-
-            cv.namedWindow('polar roi', cv.WINDOW_NORMAL)
-            cv.imshow('polar roi', roi2)
-            cv.resizeWindow('polar roi',roi2.shape[1],roi2.shape[0])
-        cv.waitKey(1)'''
-            
-
+            showResizedImg(drawing,'Polar lines',scale = 1 ) ### Visualization 
+            showResizedImg(roi2,'Polar ROI',scale = 1 ) ### Visualization 
+            cv.waitKey(1)'''
+        
     return roi2  
 
 # Output analyze
@@ -312,12 +303,12 @@ def deepL(orgImg):
     cv.putText(img,title,(100,300), cv.FONT_HERSHEY_PLAIN, 5,255,2)
 
 # Displaying
-def showResizedImg(image,windowName="test",scale=1):
+def showResizedImg(image,windowName="Deep Learning Clasification",scale=1):
     cv.namedWindow(windowName, cv.WINDOW_NORMAL)
     cv.imshow(windowName,image)
     windowShape = (int(image.shape[1]*scale),int(image.shape[0]*scale)) 
     cv.resizeWindow(windowName,windowShape)
-def printTime(str='time'):
+def printTime(str='Deep learning clasificatrion time'):
     elapsed_time = time.time() - start_time
     print("{}: \t {:.3f}s".format(str,elapsed_time))    
 #------------------Functions-end-------------------#
