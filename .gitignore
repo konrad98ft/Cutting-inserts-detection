@@ -29,3 +29,4 @@ model_sztuczne_wadliwe/
 model_sztuczne_wadliwe2/
 model_xception/
 MODELS/
+edge_detection_obsolete.py

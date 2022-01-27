@@ -8,10 +8,16 @@ from itertools import combinations
 import time
 from skimage.filters import threshold_otsu
 
+'''
+Automatic cropping images captured by NEON ADLINK Camera.
+Program cuts 1 insert into 4 parts to get more data from single image.
+Cropped images are saved in Output directory
+'''
 
-PATH = r'C:\Users\Konrad\cutting-inserts-detection-master\tensor_flow_samples'
-PATH2 = r'C:\Users\Konrad\cutting-inserts-detection-master\samples2'
-SERIES='1_'
+
+PATH = '\stand_samples_2' # Input directory path
+PATH2 = '\samples' # Output directory path
+SERIES = '1_' # Indicator added to the partucular series of input images to distract it.
 
 
 #Kapur threshold

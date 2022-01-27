@@ -10,7 +10,6 @@ from scipy import ndimage
 import time
 from skimage.filters import threshold_otsu
 
-
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from skimage import data
@@ -20,10 +19,15 @@ from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage.color import label2rgb
 
+'''
+PC version of the stand_image_processing.py used for testing purposes.
+Program uses images from linked directories instead of live camera capture.
+'''
 
-PATH = 'D:\\Python Image Processing\\cutting-inserts-detection\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
-PATH2 = 'D:\\Python Image Processing\\cutting-inserts-detection\\tensor_flow_samples\\'
-#PATH = 'D:\\python Image Processing\\cutting_inserts\\oswietlacz_pierscieniowy_backlight\\'
+# Input images directories
+PATH = '\stand_samples_2\\'
+PATH2 = '\oswietlacz_pierscieniowy_backlight\\'
+
 
 PX2MM = 620/4 #R = 4mm R = 170px 
  

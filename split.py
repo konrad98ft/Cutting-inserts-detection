@@ -6,9 +6,16 @@ import random
 import zipfile
 from os.path import basename
 
+'''
+Split images for learining to: validation-20% test-20% and train-60% directories.
+As an input require cropped images. Use pre_processing.py to prepare it.
+User should assign displayed images for 2 categories: "good" or "faulty".
+Use keys "g" and "f".
+'''
+
 
 # Source images path
-PATH = 'samples2\\'
+PATH = 'samples\\'
 
 # Output images path
 PATH_GOOD = 'traning\\samples_good\\'
@@ -50,8 +57,6 @@ for filename in os.listdir(PATH):
     cv.namedWindow('Resized',cv.WINDOW_FREERATIO)
     cv.imshow('Resized',resized)
     l+=1
-    
-   
     k = cv.waitKey(0)
         
     # Split images for learining~60% validation~20% testing~20%  

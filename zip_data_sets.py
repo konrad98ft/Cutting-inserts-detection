@@ -2,10 +2,16 @@ from zipfile import ZipFile
 import os
 from os.path import basename
 
+'''
+Script used to zip files from traininf test and validation directories.
+Use split.py to split images into mentdioned directories.
+Those files should be put in 1 directory and upload to Google Colab environment.
+'''
 
-PATHS=(r'C:\Users\Konrad\cutting-inserts-detection-master\traning',
-       r'C:\Users\Konrad\cutting-inserts-detection-master\validation',
-       r'C:\Users\Konrad\cutting-inserts-detection-master\test')
+# Pathes to the particular folders
+PATHS=('\traning',
+       '\validation',
+       '\test')
 
 for dir in PATHS:
     # create a ZipFile object
