@@ -54,7 +54,7 @@ https://drive.google.com/drive/folders/1lf42JO9PQdO09VsaYtjwALDH3pwM55xS
 
 
 ## Project Status
-Project is: _in progress_ 
+Project is: _finished_ 
 
 
 ## Room for Improvement
